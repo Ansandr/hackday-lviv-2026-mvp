@@ -65,7 +65,7 @@
 - [ ] 4. Звірити назви подій у `data/docs/error-codes.md` з seed-логами mock (`POS_SYNC_FAILED`, `SUBSCRIPTION_CREATE_RETRY`). **Done when:** назви збігаються дослівно.
 - [ ] 5. Короткий абзац для пітчу: як Gemma використана (embeddinggemma + Gemma 4 extraction + agent). **Done when:** текст у чаті команди.
 
-## UI + support API (`src/ui`, `src/support`, owner: Макс @denisk0m, гілка `feat/support-service`)
+## UI + support API (`src/ui`, `src/support`, owner: Макс @denisk0m, у main)
 
 Можна почати одразу на JSON-прикладі з CONTRACTS.md, без бекенду.
 

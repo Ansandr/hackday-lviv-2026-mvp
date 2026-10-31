@@ -7,8 +7,9 @@ The user's current scope contains exactly three scenarios: promo failure, duplic
 ## Components and ownership
 
 Use the existing Python codebase. Run FastAPI as one application with separate modules.
-The mock product can run inside this application behind a service interface.
-An HTTP adapter can replace that interface later without changes to agent tools.
+User-directed update: the support frontend/API runs independently from the agent and mock SaaS.
+Typed adapters support HTTP or Python integration. CONTRACTS.md defines the adapter boundary.
+The initial single-process topology below is superseded where it conflicts with this update.
 
 | Component | Responsibility | Suggested owner |
 |---|---|---|

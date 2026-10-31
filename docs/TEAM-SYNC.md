@@ -63,6 +63,21 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Checks: `python -m src.rag.ingest --reset` on local `mongodb-atlas-local`, then `pytest tests`: 17 passed (offline + live: three scenarios, intent filter, KbHit shape, pending never returned, tenant isolation, kb_global has no customer content).
 - Not yet done: Atlas shared cluster (guide in docs/ATLAS-SETUP.md), `search_kb` tool wrapper in the agent (agent owner), event name for retried signup in data/docs/error-codes.md is `SUBSCRIPTION_CREATE_RETRY` and must match the mock's logs.
 
+## 2026-10-31: independent support service branch
+
+- Started feat/support-service from origin/main eb072de after fetching all remote branches.
+- Main now includes the migrated RAG implementation and integration checklist. No SaaS or agent implementation was present in remote branches at inspection.
+- User explicitly requests an independent support frontend and backend with executable agent proposals.
+- Implemented src/support API, persistent conversations/session/action receipts, typed adapters and src/ui browser chat.
+- Four action cards use immutable server-prepared previews; confirmation calls the SaaS adapter, never a browser-selected tool.
+- Contract 1.2 records additional session/history routes and remote adapter boundaries. Existing action parameter shapes stay unchanged.
+- Deliberate support-only shortcut: SQLite, single API worker; product and RAG remain MongoDB. SaaS must implement atomic idempotent execution.
+- Demo mode is visibly labeled deterministic UI fixtures. It does not call AI or mutate the team's SaaS.
+- Remote mode requires the agent turn and SaaS prepare/execute adapters. Their actual live integration remains pending.
+- Launch and verification instructions: SUPPORT-SERVICE.md.
+
+- Verification: 16 support API tests passed; full suite before the final three support checks: 22 passed, 1 live RAG module skipped (MongoDB unavailable). Browser checks passed with headless Edge: login, proposal, confirm, refund, responsive layout, no JavaScript errors.
+
 ## 2026-10-31: module owners assigned
 
 - `src/backend/` (mock SaaS, seed, 4 actions, FastAPI `/api/v1` app): Макс (denisk0m).
@@ -76,3 +91,21 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Макс (denisk0m): support API + UI (`src/support`, `src/ui`) on `feat/support-service`; merges it to main himself.
 - Володя (Husiak-V): out of AI limits. Waiting for him to push all his changes; then the team takes over his work.
 - Integration: in-process Python bridge passed to `create_app(bridge=...)`; no separate agent/SaaS HTTP services for the demo.
+
+- Synchronization: merged origin/main e9fa14e into feat/support-service. Kept both team checkpoint entries. Its owner assignment and single-process seam describe the parallel main plan; this branch implements the user-requested independent support service. Reconcile ownership with teammates before integrating duplicate UI/API work.
+
+## 2026-10-31: pre-push teammate synchronization
+
+- Fetched all remote refs before pushing. origin/main remains e9fa14e, origin/feat/andrii-rag remains eb072de, and origin/feat/support-service was 600c6a6.
+- No new remote implementation commits. Main is already an ancestor of this branch; RAG changes are present.
+- Confirmed unchanged existing four action argument shapes. Agent turn and SaaS preparation/execution adapters still require live implementation/integration.
+- The ownership mismatch between main's recorded assignment and the user's independent-service request remains documented above; no teammate work was overwritten.
+- Latest complete checks: 25 passed, 1 live RAG module skipped due to unavailable MongoDB; browser flow also passed.
+- AGENTS.md now explicitly requires inspecting relevant teammate branches and interface compatibility before every push.
+
+## 2026-10-31 15:50: feat/support-service merged into main; final owners
+
+- Merged origin/feat/support-service (e69ad0c) into main; TEAM-SYNC conflict resolved by keeping both sides' entries.
+- Володя's area (UI + support API) is taken over by Макс (denisk0m) from scratch; we no longer wait for Володя's push.
+- Final owners: Andrii = `src/rag`, `src/agent` (bridge `turn`), `src/backend` (bridge `prepare`/`execute`, seed). Макс = `src/support`, `src/ui`.
+- Integration: one in-process bridge object passed to `create_app(bridge=...)`; contract 1.2 governs where older docs conflict.

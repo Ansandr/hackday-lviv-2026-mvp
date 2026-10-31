@@ -10,7 +10,8 @@ PolyTech Code Fest x SKELAR, 2026-10-31. Build 11:15-17:00 - **submission deadli
 We build a support agent for venue owners using a mock SaaS.
 The MVP covers exactly three scenarios: promo code failure at checkout, duplicate subscription charge, and promo creation.
 The agent reads evidence, asks questions, proposes an action, and verifies the persisted result after confirmation.
-The repository currently contains provider examples and the target specification. The integrated MVP is not implemented yet.
+The repository contains RAG and an independent support UI/API on the support-service branch. Live agent/SaaS integration is pending.
+Run the support service using [docs/SUPPORT-SERVICE.md](docs/SUPPORT-SERVICE.md).
 
 ## Work boundaries
 

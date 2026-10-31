@@ -1,0 +1,1 @@
+{"api":"src.support.app:app","factory":"src.support.app:create_app","ui":"src/ui/index.html","tests":"tests/test_support.py"}

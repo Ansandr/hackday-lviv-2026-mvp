@@ -85,6 +85,13 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - `src/rag/`, `data/`: Andrii.
 - Seam: agent calls `src/backend` Python methods and `src.rag.retrieve()` in-process; UI talks only to `/api/v1` (docs/INTEGRATION-REQUIREMENTS.md).
 
+## 2026-10-31 15:40: owners reassigned (supersedes the previous owner entry)
+
+- Andrii: `src/rag` (done), `src/agent` (Gemma tool loop + `search_kb`, bridge `turn`) and `src/backend` (mock SaaS seed + bridge `prepare`/`execute` for the 4 actions).
+- Макс (denisk0m): support API + UI (`src/support`, `src/ui`) on `feat/support-service`; merges it to main himself.
+- Володя (Husiak-V): out of AI limits. Waiting for him to push all his changes; then the team takes over his work.
+- Integration: in-process Python bridge passed to `create_app(bridge=...)`; no separate agent/SaaS HTTP services for the demo.
+
 - Synchronization: merged origin/main e9fa14e into feat/support-service. Kept both team checkpoint entries. Its owner assignment and single-process seam describe the parallel main plan; this branch implements the user-requested independent support service. Reconcile ownership with teammates before integrating duplicate UI/API work.
 
 ## 2026-10-31: pre-push teammate synchronization
@@ -109,3 +116,11 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Tests cover three complete API flows using a scripted model and real product persistence, plus cancellation/refund separation, tenant boundaries, stale previews, budget and allowlist.
 
 - Increment published after 32 passing offline/API tests. User supplied an env file; it was installed only as ignored .env. GEMINI_API_KEY is present; standard MONGODB_URI was not supplied. Live provider checks are next.
+## 2026-10-31 15:50: feat/support-service merged into main; final owners
+
+- Merged origin/feat/support-service (e69ad0c) into main; TEAM-SYNC conflict resolved by keeping both sides' entries.
+- Володя's area (UI + support API) is taken over by Макс (denisk0m) from scratch; we no longer wait for Володя's push.
+- Final owners: Andrii = `src/rag`, `src/agent` (bridge `turn`), `src/backend` (bridge `prepare`/`execute`, seed). Макс = `src/support`, `src/ui`.
+- Integration: one in-process bridge object passed to `create_app(bridge=...)`; contract 1.2 governs where older docs conflict.
+
+- Pre-push synchronization found main 326b7a3: Andrii has taken ownership of agent/mock in parallel. Keep this implementation on feat/support-service for comparison/integration; do not overwrite his unpushed work. Preserve his owner checkpoint above.

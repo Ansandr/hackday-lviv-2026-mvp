@@ -69,3 +69,10 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - `src/agent/` (Gemma tool loop, dispatcher, `search_kb` wrapper, AgentTurn) and `src/ui/`: Володя (Husiak-V).
 - `src/rag/`, `data/`: Andrii.
 - Seam: agent calls `src/backend` Python methods and `src.rag.retrieve()` in-process; UI talks only to `/api/v1` (docs/INTEGRATION-REQUIREMENTS.md).
+
+## 2026-10-31 15:40: owners reassigned (supersedes the previous owner entry)
+
+- Andrii: `src/rag` (done), `src/agent` (Gemma tool loop + `search_kb`, bridge `turn`) and `src/backend` (mock SaaS seed + bridge `prepare`/`execute` for the 4 actions).
+- Макс (denisk0m): support API + UI (`src/support`, `src/ui`) on `feat/support-service`; merges it to main himself.
+- Володя (Husiak-V): out of AI limits. Waiting for him to push all his changes; then the team takes over his work.
+- Integration: in-process Python bridge passed to `create_app(bridge=...)`; no separate agent/SaaS HTTP services for the demo.

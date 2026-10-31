@@ -17,14 +17,16 @@
 
 Різні машини потрібні тільки на час розробки. Спільна межа між людьми це **MongoDB Atlas** (одна база `support`) і контракти, а не мережеві виклики між модулями. Демо запускається як **один процес на одній машині**.
 
+> **Оновлення 15:40.** Макс реалізував окремий support API + UI (`src/support`, `src/ui`, contract 1.2, `docs/SUPPORT-SERVICE.md`, гілка `feat/support-service`, ще не в main). Межа з агентом і SaaS: об'єкт-bridge з методами `turn`/`prepare`/`execute`, `create_app(bridge=...)`. Рішення: агент і mock SaaS реалізуються **in-process як Python bridge**, без окремих HTTP-сервісів `:8010`/`:8020`. Там, де цей документ суперечить contract 1.2, діє contract 1.2.
+
 ## 1. Карта компонентів і власники
 
 | Компонент | Папка | Відповідальність | Власник |
 |---|---|---|---|
 | RAG | `src/rag/`, `data/docs/` | Ingestion, embeddinggemma, `kb_global`/`kb_tenant`, `retrieve()` з tenant prefilter, redaction | Andrii |
-| Mock product + DB | `src/backend/` (ще немає) | Колекції promos, pos_state, checkouts, subscriptions, payments, refund_requests, logs, actions, audit_events; seed двох тенантів; read-методи для інструментів; транзакційне виконання 4 дій | Макс (denisk0m), включно з FastAPI `/api/v1` |
-| API + агент | `src/agent/` (ще немає) | FastAPI, сесії/демо-логін, conversations, Gemma tool loop, диспетчер, `search_kb`-обгортка, confirm endpoint | Володя (Husiak-V); FastAPI-роути пише Макс |
-| UI | `src/ui/` (ще немає) | Чат, questions, evidence, preview дії, кнопки confirm/reject, ActionResult | Володя (Husiak-V) |
+| Mock product + DB | `src/backend/` (ще немає) | Колекції promos, pos_state, checkouts, subscriptions, payments, refund_requests, logs, actions, audit_events; seed двох тенантів; read-методи для інструментів; транзакційне виконання 4 дій | Andrii: seed + `prepare`/`execute` для 4 дій |
+| API + агент | `src/agent/` (ще немає) | FastAPI, сесії/демо-логін, conversations, Gemma tool loop, диспетчер, `search_kb`-обгортка, confirm endpoint | Andrii: Gemma tool loop + `search_kb`, метод `turn`. FastAPI/сесії/confirm вже в `src/support` (Макс) |
+| UI | `src/ui/` (на гілці `feat/support-service`) | Чат, questions, evidence, preview дії, кнопки confirm/reject, ActionResult | Макс (denisk0m) |
 
 CLAUDE.md перелічує тільки `src/agent`, `src/rag`, `src/ui`; README пропонує ще `src/backend/`. Хто пише mock і seed, не призначено.
 
@@ -155,7 +157,7 @@ CLAUDE.md перелічує тільки `src/agent`, `src/rag`, `src/ui`; READ
 
 | # | Питання | Кому |
 |---|---|---|
-| Q1 | Хто пише `src/backend/` (mock + seed + дії)? CLAUDE.md його не перелічує. Хто власник агента й UI поіменно? | **Вирішено:** backend + FastAPI = Макс (denisk0m); agent + UI = Володя (Husiak-V); RAG = Andrii |
+| Q1 | Хто пише `src/backend/` (mock + seed + дії)? CLAUDE.md його не перелічує. Хто власник агента й UI поіменно? | **Вирішено (15:40):** RAG + agent + mock SaaS = Andrii; support API + UI = Макс (denisk0m); Володя: чекаємо його пуш, потім розподіляємо його роботу |
 | Q2 | Сигнатури Python-методів backend для 5 read-інструментів і `propose_action`/`execute` (форми даних уже в CONTRACTS.md) | backend + агент |
 | Q3 | Порт API (`8000`?) і чи UI віддається тим самим FastAPI, чи окремий dev-сервер (тоді потрібні CORS + CSRF) | агент + UI |
 | Q4 | Виправити `EMBED_MODEL` у `.env.example` на `embeddinggemma`; привести ім'я користувача в URI (`app_reader`) до ATLAS-SETUP (`app_writer`/`rag_reader`) | Andrii |

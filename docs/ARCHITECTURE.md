@@ -62,7 +62,12 @@ The server verifies the duplicate relationship and protects the retained subscri
 After confirmation, `cancel_duplicate_subscription` disables renewal on the duplicate and marks it canceled in the mock.
 The action leaves the valid subscription active.
 Cancellation prevents future billing. It does not refund the captured charge.
-The response explicitly states that the past charge still needs a refund decision outside this MVP.
+The agent also offers to register a refund request for the extra captured payment.
+After separate confirmation, the mock stores the request for review and the chat returns its ID.
+The UI shows that the request awaits review and that no funds were returned.
+Request registration does not depend on accepting subscription cancellation.
+A duplicate captured charge on one subscription can also lead to a refund request, without canceling that subscription.
+The contract defines validation, persistence, and result fields. Refund approval and execution remain outside this MVP.
 A pending authorization, separate business, or single subscription does not authorize cancellation.
 
 ### Create a promo code
@@ -141,6 +146,12 @@ Required checks:
 7. Stale or expired action previews fail without a mutation.
 8. Pending authorization and different-business charges never authorize duplicate cancellation.
 9. Model or database failure produces an explicit failure, not a success message.
+10. Confirmed refund-request registration returns a persisted pending request and leaves payments unchanged.
+11. Repeated or concurrent requests for the same payment return the same request ID, including across conversations.
+12. Foreign-tenant, pending, refunded, or unrelated payments cannot create refund requests.
+13. Refund requests require their own confirmation and remain possible when cancellation is declined.
+14. A duplicate charge on one subscription permits a refund request without subscription cancellation.
+15. The UI never labels request registration as money returned or the financial issue resolved.
 
 ## Integration order
 

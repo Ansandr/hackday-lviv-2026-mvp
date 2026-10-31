@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.0.0**. Date: 2026-10-31.
+Contract version: **1.1.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -97,16 +97,50 @@ Each result contains `{ok, data, evidence_ids, error}`. Unknown evidence IDs can
 | validate_checkout | checkout_id | accepted, rejection_code, evaluated_version |
 | propose_action | type, parameters, evidence_ids | stored action preview |
 
-`propose_action` accepts only three discriminated variants:
+`propose_action` accepts only these four discriminated variants:
 
 ```text
 resync_pos: {venue_id}
 cancel_duplicate_subscription: {business_id, subscription_id, retained_subscription_id}
 create_promo: {venue_id, discount_percent, starts_at, expires_at, max_redemptions}
+create_refund_request: {business_id, payment_id, related_payment_id}
 ```
 
 The server constructs preconditions from current records. It does not trust model-supplied versions or duplicate classifications.
 Execution is a server operation reached through authenticated confirmation, not a model-accessible tool.
+
+## Refund request within double_charge
+
+The agent can propose `create_refund_request` for a suspected duplicate captured charge supported by payment and log evidence.
+This action registers a request for review. It never calls a payment provider or changes a payment to refunded.
+Cancellation and refund requests are independent actions with separate previews and confirmations.
+Declining cancellation does not prevent a refund request. An already canceled subscription can still have a captured payment.
+
+The server verifies two distinct captured payments belonging to the same tenant and business.
+It verifies matching plan, currency, amount, and overlapping service periods through linked subscriptions.
+Both payments can belong to one subscription. That case permits a refund request, but not duplicate-subscription cancellation.
+A pending authorization, already refunded payment, or unrelated payment fails validation.
+Unclear evidence causes clarification, not automatic approval of a refund.
+
+The server derives amount_minor and currency from the target payment and stores evidence_ids from the validated proposal.
+The MVP requests the full target payment amount. Partial refunds are outside scope.
+The preview displays the target payment, amount, currency, reason, and the fact that review is required.
+The server snapshots these values in action preconditions and revalidates them on confirmation.
+
+A confirmed action creates one `refund_requests` record with status `pending_review` and reason `suspected_duplicate_charge`.
+Use a unique `(tenant_id, payment_id)` index to prevent duplicate requests, including requests from different conversations.
+If a request already exists, return its ID and current status without creating another request.
+Use a transaction for request creation, action result, and audit. Payment and subscription states remain unchanged.
+On a concurrent unique-key conflict, reread the existing request and persist the action result without another request.
+
+ActionResult uses type `create_refund_request` and resource_id equal to refund_request_id.
+Its after object contains refund_request_id, payment_id, amount_minor, currency, and status `pending_review`.
+Its verification object contains `{persisted: true, funds_moved: false}` after a successful read-back.
+For a new request before is null. For an existing request before and after contain the same request summary.
+A succeeded action means that the request was registered, not that a refund succeeded.
+The chat shows the request ID and "Awaiting review; funds have not been returned".
+Keep conversation state `unresolved` while the financial issue awaits review. Action success does not resolve the charge itself.
+No refund approval or processing endpoint is part of this MVP.
 
 ## MongoDB contracts
 
@@ -121,6 +155,7 @@ Mutable product records also contain `version`, an integer used for optimistic c
 | checkouts | checkout_id, business_id, venue_id, promo_code, trace_id, occurred_at |
 | subscriptions | subscription_id, business_id, plan_id, period_start, period_end, status, renewal_enabled |
 | payments | payment_id, subscription_id, business_id, amount_minor, currency, status, trace_id |
+| refund_requests | refund_request_id, business_id, payment_id, related_payment_id, amount_minor, currency, reason, status, actor_id, conversation_id, action_id, evidence_ids |
 | logs | log_id, trace_id, parent_event_id, service, event, occurred_at, entity_refs, safe_details |
 | actions | action_id, conversation_id, actor_id, type, parameters, preconditions, status, expires_at, result |
 | audit_events | audit_id, action_id, actor_id, event, before, after, occurred_at |
@@ -128,6 +163,7 @@ Mutable product records also contain `version`, an integer used for optimistic c
 | kb_global | kb_id, title, text, embedding, embedding_model, intent, status; no customer-derived content |
 
 Unique indexes: `(tenant_id, resource_id)` on each tenant collection, `(tenant_id, code)` on promos, `(tenant_id, venue_id)` on pos_state.
+Refund requests additionally require a unique `(tenant_id, payment_id)` index. The only request status in this MVP is `pending_review`.
 Read indexes: logs `(tenant_id, trace_id, occurred_at)`, subscriptions `(tenant_id, business_id)`, payments `(tenant_id, business_id)`.
 Vector index filter fields: tenant_id, status, intent. Global documents use a separate vector index without tenant_id.
 
@@ -181,8 +217,16 @@ Consumers must implement v1 or use an explicit adapter during migration. Do not 
 
 | Version | Date | Change | Authorization / notification | Integration status |
 |---|---|---|---|---|
+| 1.1.0 | 2026-10-31 | Add confirmed refund-request registration within double_charge; no money movement | Explicit user request; repository notice in TEAM-SYNC.md | Specification only; API, agent, frontend, DB, and RAG policy updates required |
 | 1.0.0 | 2026-10-31 | Consolidate three-scenario API, agent, RAG, DB, and action contracts; supersede the initial sketch | Explicit user request in this Codex chat; repository notice in TEAM-SYNC.md; no external message sent | Direct merge authorized; implementation migration pending |
 
 For each later change, record the before/after behavior, compatibility, affected owners, migration, and notification reference before implementation.
 No PR or owner acknowledgment is required during the hackathon. Publish notices for all contract changes, including optional additions.
 Integrate with current main, preserve teammate work, and document unresolved implementation migrations.
+
+### 1.1 integration notice
+
+Existing routes and payload fields remain unchanged. The action union gains create_refund_request.
+Update exhaustive action validators and UI renderers before the agent emits this new variant.
+Backend adds refund_requests and its unique indexes. RAG policy must distinguish request registration from refund execution.
+The existing three actions retain their behavior. New behavior remains unimplemented until the corresponding code and checks are added.

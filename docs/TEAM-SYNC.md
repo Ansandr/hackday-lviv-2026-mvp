@@ -38,3 +38,16 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - These are known migration differences for later RAG integration. This documentation change does not merge or rewrite that feature branch.
 - Publish this baseline notice with the main push. No external team message was sent.
 - PR approvals and owner acknowledgments are not merge gates. Contract notices and compatibility checks remain required.
+
+## 2026-10-31: refund-request scope addition
+
+- Inspected origin/main at 0137b83. The checkout was current and clean before this update.
+- User requested that the agent offer a refund request after a duplicate charge.
+- Contract 1.1.0 adds create_refund_request and refund_requests within the existing double_charge scenario.
+- Separate confirmation is required. The result is a pending review request, never an executed refund.
+- API/DB: add validation, tenant isolation, persistence, audit, and uniqueness per target payment.
+- Agent: offer the request with evidence independently of subscription cancellation.
+- Frontend: support the new action variant and show request ID, amount, and pending review status.
+- RAG: describe request submission separately from actual refund approval and execution.
+- Update validators and renderers before enabling the new action. Existing three actions retain their behavior.
+- This commit updates specifications and acceptance criteria only. Runtime implementation remains pending.

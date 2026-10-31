@@ -24,10 +24,12 @@ Build a hackathon prototype for a SaaS vendor supporting venue owners and chains
 Implement exactly these three scenarios:
 
 - Promo code fails at checkout: inspect POS and system logs, identify the cause, propose a permitted correction, and verify the result.
-- Duplicate subscription charge: inspect payment and subscription logs, explain the cause, and offer cancellation of a proven duplicate for one business.
+- Duplicate subscription charge: inspect payment and subscription logs, explain the cause, offer cancellation of a proven duplicate, and offer a refund request.
 - Create a promo code: collect missing parameters, show a preview, create the code in MongoDB, and return it in chat.
 
 Subscription cancellation does not refund a captured payment. Never claim that it does.
+After separate confirmation, the agent can register a refund request for review and return its ID.
+A registered request is not an approved or completed refund. Actual refund execution remains outside this MVP.
 Do not add venue onboarding, refund execution, quality dashboards, automatic knowledge publication, or a full SaaS product to this MVP.
 
 Use the existing Python repository, a modular FastAPI application, one bounded agent, and a mock product service interface.

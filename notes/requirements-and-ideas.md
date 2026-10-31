@@ -1,3 +1,5 @@
+> Historical planning reference. Current scope and rules: [AGENTS.md](../AGENTS.md). Canonical interfaces: [CONTRACTS.md](../docs/CONTRACTS.md). Conflicting ideas below are not current requirements.
+
 # Requirements & ideas (living doc, newest decisions at the bottom of each section)
 
 ## Hard requirements (from bot / organizers)

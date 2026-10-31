@@ -1,3 +1,5 @@
+> Historical planning reference. Current scope and rules: [AGENTS.md](../AGENTS.md). Canonical interfaces: [CONTRACTS.md](../docs/CONTRACTS.md). Conflicting ideas below are not current requirements.
+
 # MVP playbook (build window 11:15-17:00 = ~5h45m)
 - 11:15-11:45 Read challenge, pick ONE user + ONE pain. One-line pitch.
 - 11:45-12:30 Stack, roles (UI / backend+Gemma / demo+pitch), repo skeleton. Book mentor slots early (12:00-16:30, max 2).

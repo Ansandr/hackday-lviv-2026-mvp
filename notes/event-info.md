@@ -1,3 +1,5 @@
+> Historical planning reference. Current scope and rules: [AGENTS.md](../AGENTS.md). Canonical interfaces: [CONTRACTS.md](../docs/CONTRACTS.md). Conflicting ideas below are not current requirements.
+
 # Hacktoberfest Hack Day Lviv — Gemma MVP kit
 
 - Event: PolyTech Code Fest x SKELAR, Sat 2026-10-31. **Venue (per organizers' Telegram, supersedes the MLH page):**

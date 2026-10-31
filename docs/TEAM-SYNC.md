@@ -86,3 +86,12 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Seam: agent calls `src/backend` Python methods and `src.rag.retrieve()` in-process; UI talks only to `/api/v1` (docs/INTEGRATION-REQUIREMENTS.md).
 
 - Synchronization: merged origin/main e9fa14e into feat/support-service. Kept both team checkpoint entries. Its owner assignment and single-process seam describe the parallel main plan; this branch implements the user-requested independent support service. Reconcile ownership with teammates before integrating duplicate UI/API work.
+
+## 2026-10-31: pre-push teammate synchronization
+
+- Fetched all remote refs before pushing. origin/main remains e9fa14e, origin/feat/andrii-rag remains eb072de, and origin/feat/support-service was 600c6a6.
+- No new remote implementation commits. Main is already an ancestor of this branch; RAG changes are present.
+- Confirmed unchanged existing four action argument shapes. Agent turn and SaaS preparation/execution adapters still require live implementation/integration.
+- The ownership mismatch between main's recorded assignment and the user's independent-service request remains documented above; no teammate work was overwritten.
+- Latest complete checks: 25 passed, 1 live RAG module skipped due to unavailable MongoDB; browser flow also passed.
+- AGENTS.md now explicitly requires inspecting relevant teammate branches and interface compatibility before every push.

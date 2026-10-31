@@ -75,8 +75,8 @@ Other documents must link to contracts instead of repeating interface definition
 At task start, before interface integration, before commit or push, and at least every 30 minutes during active work:
 
 1. Inspect `git status --short` and the current branch.
-2. Run `git fetch origin` and inspect incoming commits and changed files against the target branch.
-3. Read changed context files, contracts, and the relevant teammate implementation.
+2. Run `git fetch origin`, inspect `git branch -r -v`, and review incoming commits and changed files in main and relevant teammate branches.
+3. Read changed context files, contracts, and the relevant teammate implementation. Before every push, compare shared interfaces, action shapes, module ownership, and integration assumptions. Resolve incompatibilities or record the exact pending adapter work; do not claim live compatibility from documentation alone.
 4. Record meaningful findings and the inspected commit in `docs/TEAM-SYNC.md`.
 
 If fetch fails, record the failure and stale checkpoint. Do not claim that the checkout is current.

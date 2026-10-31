@@ -62,3 +62,10 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Embeddings: local Ollama `embeddinggemma` (768). Ticket extraction: hosted Gemma 4 (`GEMMA_MODEL`) with fallback to local `gemma3:4b`.
 - Checks: `python -m src.rag.ingest --reset` on local `mongodb-atlas-local`, then `pytest tests`: 17 passed (offline + live: three scenarios, intent filter, KbHit shape, pending never returned, tenant isolation, kb_global has no customer content).
 - Not yet done: Atlas shared cluster (guide in docs/ATLAS-SETUP.md), `search_kb` tool wrapper in the agent (agent owner), event name for retried signup in data/docs/error-codes.md is `SUBSCRIPTION_CREATE_RETRY` and must match the mock's logs.
+
+## 2026-10-31: module owners assigned
+
+- `src/backend/` (mock SaaS, seed, 4 actions, FastAPI `/api/v1` app): Макс (denisk0m).
+- `src/agent/` (Gemma tool loop, dispatcher, `search_kb` wrapper, AgentTurn) and `src/ui/`: Володя (Husiak-V).
+- `src/rag/`, `data/`: Andrii.
+- Seam: agent calls `src/backend` Python methods and `src.rag.retrieve()` in-process; UI talks only to `/api/v1` (docs/INTEGRATION-REQUIREMENTS.md).

@@ -27,12 +27,12 @@
 ## Whole team (першими, 15:00–15:15)
 
 - [x] Завершити merge `feat/andrii-rag` у `main` і запушити (`b3cdbf3`). **Done when:** `python -m pytest tests` зелений у кожного після pull.
-- [ ] Вирішити, де живуть API і mock: пропозиція `src/backend/` (FastAPI app + mock repo + seed + executor, як у README; див. INTEGRATION-REQUIREMENTS Q1). **Done when:** owner кожної папки названий у TEAM-SYNC.md.
+- [x] Вирішити, де живуть API і mock: пропозиція `src/backend/` (FastAPI app + mock repo + seed + executor, як у README; див. INTEGRATION-REQUIREMENTS Q1). **Done when:** owner кожної папки названий у TEAM-SYNC.md.
 - [ ] Додати `fastapi`, `uvicorn` у `requirements.txt` (одна людина, один коміт). **Done when:** `pip install -r requirements.txt` у всіх проходить.
 - [ ] Одна спільна MongoDB: Atlas за [ATLAS-SETUP.md](ATLAS-SETUP.md) **або** локальний `mongodb-atlas-local` на демо-ноутбуці. **Done when:** усі мають однаковий `MONGODB_URI` у своєму `.env`.
 - [ ] Визначити демо-ноутбук: на ньому Mongo, Ollama з `embeddinggemma`, `GEMINI_API_KEY`. **Done when:** `python -m src.rag.retrieve "Як створити промокод"` повертає hits на ньому.
 
-## API / mock SaaS (owner: TBD)
+## API / mock SaaS (`src/backend`, owner: Макс @denisk0m)
 
 Порядок важливий: агент і UI чекають на п.1–3.
 
@@ -45,9 +45,9 @@
 - [ ] 7. Executor `cancel_duplicate_subscription`: дубль -> `canceled`, `renewal_enabled=false`, retained лишається active, payments не змінюються. **Done when:** тест перевіряє обидві підписки і незмінні payments.
 - [ ] 8. Executor `create_refund_request`: перевірка двох captured payments; unique index `(tenant_id, payment_id)`; status `pending_review`; `verification={persisted: true, funds_moved: false}`; повторний confirm повертає той самий ID. **Done when:** два confirm -> один запис.
 - [ ] 9. Повторний confirm того самого `action_id` повертає збережений результат (idempotency); прострочений action -> `STALE_ACTION`. **Done when:** 2 тести зелені.
-- [ ] 10. FastAPI routes з CONTRACTS.md (5 шт.), сесія через фіксовані demo-токени з `.env` (owner tenant_a, owner tenant_b). **Done when:** `uvicorn src.api.main:app` і `curl` на `POST /api/v1/conversations` повертає `{conversation_id, state}`; без сесії — 401.
+- [ ] 10. FastAPI routes з CONTRACTS.md (5 шт.), сесія через фіксовані demo-токени з `.env` (owner tenant_a, owner tenant_b). **Done when:** `uvicorn src.backend.main:app` і `curl` на `POST /api/v1/conversations` повертає `{conversation_id, state}`; без сесії — 401.
 
-## Agent (`src/agent`, owner: TBD)
+## Agent (`src/agent`, owner: Володя @Husiak-V)
 
 - [ ] 1. Перевірити, чи `GEMMA_MODEL` тягне native tool calling (`src/tools_demo.py`); якщо ні — JSON-режим (`src/rag/llm.py::chat_json` як зразок). **Done when:** рішення записане в TEAM-SYNC.md (≤15 хв).
 - [ ] 2. `search_kb` обгортка над `src.rag.retrieve.retrieve` в envelope `{ok, data: {hits}, evidence_ids: [kb_id...], error}`. **Done when:** unit-тест з stub retrieve.
@@ -65,7 +65,7 @@
 - [ ] 4. Звірити назви подій у `data/docs/error-codes.md` з seed-логами mock (`POS_SYNC_FAILED`, `SUBSCRIPTION_CREATE_RETRY`). **Done when:** назви збігаються дослівно.
 - [ ] 5. Короткий абзац для пітчу: як Gemma використана (embeddinggemma + Gemma 4 extraction + agent). **Done when:** текст у чаті команди.
 
-## UI (`src/ui`, owner: TBD)
+## UI (`src/ui`, owner: Володя @Husiak-V)
 
 Можна почати одразу на JSON-прикладі з CONTRACTS.md, без бекенду.
 

@@ -104,13 +104,14 @@ const demo = [
   ["Створи промокод -10% до 10 листопада", "Уточнює ліміт використань, показує превʼю, створює промокод після підтвердження.", AMBER],
 ];
 demo.forEach(([h, t, c], i) => {
-  const x = 0.5 + i * 3.05; card(s, x, 1.3, 2.85, 2.95);
-  s.addShape(pres.shapes.OVAL, { x: x + 0.25, y: 1.45, w: 0.45, h: 0.45, fill: { color: c } });
-  s.addText(h, { x: x + 0.25, y: 1.98, w: 2.4, h: 0.7, fontFace: B, fontSize: 15, bold: true, color: INK, margin: 0, valign: "top" });
-  s.addText(t, { x: x + 0.25, y: 2.7, w: 2.4, h: 1.5, fontFace: B, fontSize: 11.5, color: MUTED, margin: 0, valign: "top" });
+  const y = 1.3 + i * 1.02; card(s, 0.5, y, 3.55, 0.92);
+  s.addShape(pres.shapes.OVAL, { x: 0.62, y: y + 0.12, w: 0.25, h: 0.25, fill: { color: c } });
+  s.addText(h, { x: 0.98, y: y + 0.06, w: 3.0, h: 0.36, fontFace: B, fontSize: 12, bold: true, color: INK, margin: 0, valign: "middle" });
+  s.addText(t, { x: 0.62, y: y + 0.42, w: 3.35, h: 0.48, fontFace: B, fontSize: 8, color: MUTED, margin: 0, valign: "top" });
 });
-s.addShape(pres.shapes.RECTANGLE, { x: 0.5, y: 4.4, w: 9, h: 0.75, fill: { color: "FFF4E0" }, line: { color: AMBER, width: 1.5, dashType: "dash" } });
-s.addText("ВІДЕО: <посилання>  (запис робочого сценарію, вставити сюди)", { x: 0.7, y: 4.4, w: 8.6, h: 0.75, fontFace: B, fontSize: 16, bold: true, color: INK, valign: "middle", margin: 0 });
+// demo clip lives outside the repo (submission/ is gitignored); rebuild needs it on disk
+s.addMedia({ type: "video", path: "C:/Workspace/04_Projects/Software/2026-10-31_hackday-lviv-gemma/submission/team14-demo.mp4", x: 4.25, y: 1.3, w: 5.25, h: 2.95 });
+s.addText("Демо: промокод на касі → докази → підтвердження → перевірка; роздратований клієнт → пріоритет Високий", { x: 0.5, y: 4.45, w: 9, h: 0.5, fontFace: B, fontSize: 12, bold: true, color: INK, valign: "middle", margin: 0 });
 s.addNotes("Демо в браузері: логін tenant_a. Показати докази під відповіддю, картку дії, підтвердження і результат. Для подвійного списання підкреслити: запит на повернення, а не повернення.");
 
 // 7. Safety

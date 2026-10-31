@@ -183,3 +183,8 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - No raw customer data is added to global RAG or model credentials; RAG code and colleague pitch files were left intact.
 
 - Verification: 57 offline/API tests and the browser regression passed before the final explicit-confusion guard. Live Gemma returned customer_tone in its normal response. Added a guard so neutral model tone does not erase explicit confusion; attribution changes to rules when that guard applies.
+
+## 2026-10-31 16:20: ROI counter in UI (Andrii via agent)
+
+- Frontend-only (`src/ui`): badge "Зекономлено ~N хв" on succeeded actions and on resolved answers without action, header total per browser session (sessionStorage, counted once per action/message).
+- Minutes per type are demo assumptions (resync 12, cancel duplicate 15, refund request 10, create promo 8, answer 6); no API or contract change.

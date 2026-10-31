@@ -3,6 +3,11 @@ let token = sessionStorage.getItem('support-session'), current = null, busy = fa
 const outbox=[];
 const labels = {resync_pos:'Синхронізація каси',cancel_duplicate_subscription:'Скасування зайвої підписки',create_promo:'Створення промокоду',create_refund_request:'Запит на повернення коштів'};
 const fields = {venue_id:'Заклад',business_id:'Бізнес',subscription_id:'Зайва підписка',retained_subscription_id:'Основна підписка',discount_percent:'Знижка, %',starts_at:'Початок',expires_at:'Діє до',max_redemptions:'Використання',payment_id:'Платіж',related_payment_id:'Пов’язаний платіж',amount_minor:'Сума в мінімальних одиницях',currency:'Валюта',venue_name:'Заклад'};
+// ROI minutes per closed case are demo assumptions, not measured.
+const savedMinutes={resync_pos:12,cancel_duplicate_subscription:15,create_refund_request:10,create_promo:8,answer:6};
+let saved={};try{saved=JSON.parse(sessionStorage.getItem('support-saved')||'{}');}catch{}
+function showSaved(){const total=Object.values(saved).reduce((a,b)=>a+b,0);$('#saved').hidden=!total;$('#saved').textContent='Зекономлено сьогодні: '+total+' хв';}
+function credit(key,minutes,box){if(!(key in saved)){saved[key]=minutes;try{sessionStorage.setItem('support-saved',JSON.stringify(saved));}catch{}}box.append(el('div','saved-badge','Зекономлено ~'+minutes+' хв роботи підтримки'));showSaved();}
 function el(tag, cls, text){const x=document.createElement(tag); if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
 function error(e){$('#error').textContent=e.message;$('#error').hidden=false;setTimeout(()=>$('#error').hidden=true,8000);}
 function setBusy(value,text=''){busy=value;$('#progress').textContent=text;$('#send').disabled=value;$('#new').disabled=value;$('#logout').disabled=value;document.querySelectorAll('.actions button, .suggestions button, .retry-message').forEach(b=>b.disabled=value);}
@@ -28,7 +33,8 @@ function addMessage(m,latest){const box=el('article','message '+m.role);if(m.rol
 if(t.questions?.some(q=>q.field==='promo')){const b=el('button','','Заповнити приклад параметрів');b.onclick=()=>{$('#message').value=JSON.stringify({venue_id:'venue_01',discount_percent:20,starts_at:new Date().toISOString(),expires_at:new Date(Date.now()+7*86400000).toISOString(),max_redemptions:100},null,2);$('#message').focus();};box.append(b);}
 if(t.evidence?.length){const d=el('details','card'),s=el('summary','card-title','Що ми перевірили · '+t.evidence.length);d.append(s);const body=el('div','card-body');for(const e of t.evidence)body.append(el('span','evidence',`${e.kind==='kb'?'Правила сервісу':'Історія роботи'}\n${SupportPresentation.evidence(e)}`));d.append(body);box.append(d);}
 if(t.proposed_action){const a=t.proposed_action,card=el('div','card');card.append(el('div','card-title',labels[a.type]||a.type));const body=el('div','card-body');body.append(el('div','',a.summary));const dl=el('dl','params');for(const [k,v] of Object.entries({...a.parameters,...a.preview})){if(k==='demo'||(k==='venue_id'&&a.preview?.venue_name))continue;dl.append(el('dt','',fields[k]||k),el('dd','',SupportPresentation.parameter(k,v)));}body.append(dl,el('div','evidence','Дійсна до '+new Date(a.expires_at).toLocaleTimeString('uk-UA')));if(a.type==='create_refund_request')body.append(el('p','','Це запит на розгляд. Гроші автоматично не повертаються.'));if(latest){const buttons=el('div','actions');for(const [decision,title] of [['confirm','Підтвердити'],['reject','Відмовитися']]){const b=el('button',decision,title);b.onclick=()=>decide(a.action_id,decision);buttons.append(b);}body.append(buttons);}else body.append(el('div','evidence','Попередня пропозиція · перегляньте актуальний стан розмови'));card.append(body);box.append(card);}
-if(t.action_result){const a=t.action_result;const names={succeeded:'Виконано',failed:'Не виконано',rejected:'Відхилено',expired:'Пропозиція застаріла',executing:'Перевіряємо результат'};let text=names[a.status]||a.status;if(a.result){if(a.result.after.demo)text='Демонстрація завершена';else text+=' · '+a.result.resource_id;if(a.result.type==='create_refund_request')text+=' · Очікує розгляду';}if(a.error)text+='\n'+a.error.message;box.append(el('div','result',text));}}
+if(t.action_result){const a=t.action_result;const names={succeeded:'Виконано',failed:'Не виконано',rejected:'Відхилено',expired:'Пропозиція застаріла',executing:'Перевіряємо результат'};let text=names[a.status]||a.status;if(a.result){if(a.result.after.demo)text='Демонстрація завершена';else text+=' · '+a.result.resource_id;if(a.result.type==='create_refund_request')text+=' · Очікує розгляду';}if(a.error)text+='\n'+a.error.message;box.append(el('div','result',text));if(a.status==='succeeded'&&a.result&&!a.result.after?.demo)credit(a.action_id,savedMinutes[a.result.type]||savedMinutes.answer,box);}
+else if(t.state==='resolved'&&!t.proposed_action)credit(m.message_id||m.created_at,savedMinutes.answer,box);}
 $('#thread').append(box);return box;}
 function scrollThread(){$('#thread').scrollTop=$('#thread').scrollHeight;}
 function renderOutgoing(entry){
@@ -81,6 +87,7 @@ $('#new').onclick=()=>{if(!busy)create().catch(error);};
 $('#logout').onclick=async()=>{try{await api('/session','DELETE');}catch{}token=null;current=null;outbox.length=0;sessionStorage.removeItem('support-session');$('#history').replaceChildren();showLogin();};
 document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>send(b.dataset.prompt));
 api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · без AI':h.mode==='integrated'?'GEMMA · підключення':'АГЕНТ';$('#demo-hint').hidden=h.mode!=='demo';}).catch(error);
+showSaved();
 if(token)enter().catch(error);
 
 $('#history-sort').onchange=()=>history().catch(error);

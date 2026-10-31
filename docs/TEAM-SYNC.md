@@ -133,3 +133,9 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Live billing diagnosis returned correct cancel_duplicate_subscription with an explicit no-refund explanation. Hosted provider intermittently fails; bounded retries are enabled.
 - Fetch found fe3ad52 from Andrii with alternate agent/agent.py, agent/serve.py, backend/mock_saas.py. Preserve these files and their tests; integrated runtime.py/product.py remain the user-authorized primary persisted implementation.
 - Latest offline/API checks: 34 passed. Vector RAG remains unverified on this machine until Ollama embeddinggemma is available; curated-file fallback is explicit.
+## 2026-10-31 16:20: agent + mock SaaS live bridge (Andrii)
+
+- `src/backend/mock_saas.py`: seed for tenant_a/tenant_b (promo FALL20 with stale POS version, duplicate subscriptions sub_01/sub_02, duplicate payments pay_01/pay_02, logs incl. POS_SYNC_FAILED, SUBSCRIPTION_CREATE_RETRY), 6 read tools, `prepare`/`execute` for the 4 actions with idempotency by action_id, precondition recheck, audit. Shortcut: in-memory, resets on restart.
+- `src/agent/agent.py`: Gemma JSON tool loop (max 6 steps) over the read tools + `search_kb` (RAG `retrieve`); only cites evidence from tool results; invalid proposals are dropped.
+- `src/agent/serve.py`: `LocalBridge` wired into Max's `create_app`. Run live: `python -m uvicorn src.agent.serve:app --port 8000`, login `demo-a` / `demo-b`.
+- Checks: `pytest tests` 37 passed (new tests/test_agent_bridge.py: resync and refund end to end through the API, tenant isolation, bad proposal). Live Gemma smoke: promo scenario -> resync_pos proposal, prepare OK.

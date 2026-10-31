@@ -80,6 +80,21 @@ class Question(Strict):
     options: list[str] | None = None
 
 
+class CustomerTone(Strict):
+    emotion: Literal['neutral','confused','frustrated','angry','worried','positive','unknown']
+    sentiment: Literal['negative','neutral','positive','unknown']
+    rationale: str = Field(min_length=1,max_length=400)
+
+
+class TicketAnalysis(Strict):
+    priority: Literal['low','normal','high','urgent']
+    urgency: Literal['low','normal','high']
+    impact: Literal['none','limited','business_blocked','multiple_venues','unknown']
+    priority_reason: str
+    customer_tone: CustomerTone
+    tone_source: Literal['model','rules']
+
+
 class AgentResponse(Strict):
     """Agent proposes; only the support API can create executable previews."""
     reply: str = Field(min_length=1, max_length=16000)
@@ -87,6 +102,7 @@ class AgentResponse(Strict):
     questions: list[Question] = Field(default_factory=list, max_length=10)
     evidence: list[Evidence] = Field(default_factory=list, max_length=30)
     proposal: Proposal | None = None
+    customer_tone: CustomerTone | None = None
 
 
 class Prepared(Strict):

@@ -16,6 +16,8 @@ from pydantic import ValidationError
 from .adapters import ActionRejected, DependencyError, DemoBridge, ModelUnavailable, configured_bridge
 from .models import Context, Decision, Login, MessageInput
 from .store import Store
+from .triage import assess, PRIORITY_ORDER
+from typing import Literal
 
 
 def now():
@@ -105,8 +107,10 @@ def create_app(store=None, bridge=None, accounts=None):
         return {"ok": True}
 
     @app.get("/api/v1/conversations")
-    def conversations(ctx=Depends(context)):
-        return [{k: c[k] for k in ("conversation_id", "title", "state", "updated_at")} for c in store.list("conversation", ctx.tenant_id)]
+    def conversations(sort: Literal['recent','priority']='recent',ctx=Depends(context)):
+        rows=[{**{k: c[k] for k in ("conversation_id", "title", "state", "updated_at")},'analysis':c.get('analysis')} for c in store.list("conversation", ctx.tenant_id)]
+        if sort=='priority': rows.sort(key=lambda row:PRIORITY_ORDER.get((row.get('analysis') or {}).get('priority'),2))
+        return rows
 
     @app.post("/api/v1/conversations", status_code=201)
     def create_conversation(ctx=Depends(context)):
@@ -135,6 +139,11 @@ def create_app(store=None, bridge=None, accounts=None):
             if previous and owned("action", previous["action_id"], ctx)["status"] == "executing":
                 fail(409, "CONVERSATION_BUSY", "Спочатку перевірте результат попередньої дії")
             candidate = {**c, "messages": c["messages"] + [{"message_id": identifier("msg"), "role": "user", "text": body.text, "created_at": stamp()}]}
+            # Triage is available even if the hosted model is temporarily down.
+            c['analysis']=assess(candidate['messages']).model_dump()
+            candidate['analysis']=c['analysis']
+            if c['title']=='Нове звернення': c['title']=body.text[:64]
+            save_conversation(c,ctx)
             public = {k: v for k, v in candidate.items() if k != "requests"}
             try:
                 response = bridge.turn(ctx, public)
@@ -162,7 +171,9 @@ def create_app(store=None, bridge=None, accounts=None):
                 if old["status"] == "proposed":
                     old["status"] = "expired"
                     store.put("action", old["action_id"], ctx.tenant_id, old)
-            turn = {"schema_version": "1", "conversation_id": conversation_id, "state": "awaiting_confirmation" if action else response.state, "reply": response.reply, "questions": [q.model_dump(exclude_none=True) for q in response.questions], "evidence": [e.model_dump() for e in response.evidence], "proposed_action": action, "action_result": None}
+            analysis=assess(candidate['messages'],response.customer_tone).model_dump()
+            turn = {"schema_version": "1", "conversation_id": conversation_id, "state": "awaiting_confirmation" if action else response.state, "reply": response.reply, "questions": [q.model_dump(exclude_none=True) for q in response.questions], "evidence": [e.model_dump() for e in response.evidence], "proposed_action": action, "action_result": None,'analysis':analysis}
+            c['analysis']=analysis
             c["messages"] = candidate["messages"] + [{"message_id": identifier("msg"), "role": "assistant", "text": response.reply, "created_at": stamp(), "turn": turn}]
             c["latest_turn"], c["state"] = turn, turn["state"]
             c["title"] = body.text[:64] if c["title"] == "Нове звернення" else c["title"]
@@ -231,7 +242,7 @@ def create_app(store=None, bridge=None, accounts=None):
                     text += " Скасування підписки не повертає попередній платіж. Можете попросити створити запит на повернення коштів."
                 if a["type"] == "create_promo" and a["result"]["after"].get("code"):
                     text += " Промокод: " + str(a["result"]["after"]["code"])
-            turn = {"schema_version": "1", "conversation_id": c["conversation_id"], "state": state, "reply": text, "questions": [], "evidence": [], "proposed_action": None, "action_result": action_result(a)}
+            turn = {"schema_version": "1", "conversation_id": c["conversation_id"], "state": state, "reply": text, "questions": [], "evidence": [], "proposed_action": None, "action_result": action_result(a),'analysis':c.get('analysis')}
             c["messages"].append({"message_id": identifier("msg"), "role": "assistant", "text": text, "created_at": stamp(), "turn": turn})
             c["latest_turn"], c["state"] = turn, state
             save_conversation(c, ctx)

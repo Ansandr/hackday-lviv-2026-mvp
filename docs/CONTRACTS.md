@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.4.0**. Date: 2026-10-31.
+Contract version: **1.5.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -342,3 +342,38 @@ The UI does not print internal evidence IDs, Markdown comments, raw event names 
 Historical evidence is sanitized for presentation without rewriting saved audit data.
 Model failures return MODEL_UNAVAILABLE; product dependency failures retain DEPENDENCY_UNAVAILABLE.
 Conversation context omits UI cards and caps old history while retaining the latest user reply.
+
+## Priority and customer-tone assessment (1.5)
+
+User explicitly requests priority and expressed-emotion analysis as part of the MVP.
+AgentResponse adds optional customer_tone: {emotion, sentiment, rationale}.
+Emotion: neutral | confused | frustrated | angry | worried | positive | unknown.
+Sentiment: negative | neutral | positive | unknown. Rationale is a short text-based explanation, maximum 400 characters.
+This is expressed conversational tone, not a diagnosis or personality assessment. The agent uses it for reply style only.
+Gemma can return the tone in its existing final response; no additional model call is required.
+Missing model tone uses explicit lexical rules and is labeled rules, not model.
+
+AgentTurn adds optional analysis, also persisted as conversation.analysis and returned in conversation list rows.
+Analysis is {priority, urgency, impact, priority_reason, customer_tone, tone_source}.
+Priority: low | normal | high | urgent. Urgency: low | normal | high.
+Impact: none | limited | business_blocked | multiple_venues | unknown.
+Tone_source: model | rules. Customer_tone uses the shape above.
+All old records without analysis remain valid and render without an assessment card.
+
+The API calculates priority from reported operational impact, not model emotion:
+- Reported business blockage with a queue or multiple affected venues: urgent.
+- Reported business blockage or duplicate charge: high.
+- Routine promo creation without urgency: low.
+- Otherwise: normal. Explicit customer confirmation that the issue is fixed downgrades the report.
+Priority reasons identify that these are customer-reported facts, not independently verified operational evidence.
+An angry message alone does not change priority, and analysis never grants mutation permissions or bypasses confirmation.
+Short clarifications preserve recent incident context. Tone assesses the latest customer text.
+Rules-based analysis is persisted before the model request so model outages do not prevent initial triage.
+Confirmation results preserve the latest analysis; they do not fabricate a new emotional assessment.
+
+GET /api/v1/conversations accepts optional sort=recent (default) or sort=priority.
+Priority sort orders urgent, high, normal, low within the authenticated tenant only. It does not create a cross-tenant queue.
+This sorting changes presentation order; it does not implement background job scheduling or an SLA guarantee.
+UI shows an expandable assessment panel, priority markers and an optional priority order selector.
+Contract change notice: compatible optional metadata and list query parameter; existing four action shapes are unchanged.
+Affected components: model prompt/final schema, support API persistence/listing, and UI. Implemented together in this change.

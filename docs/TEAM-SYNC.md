@@ -171,3 +171,15 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - A successful POST is not marked failed when subsequent history refresh fails; its returned AgentTurn still appears.
 - No public payload or action contract changed. Updated the model-outage text to match inline retry behavior.
 - Playwright verified delayed success, failure/retry, duplicate prevention, draft preservation and history-refresh failure recovery.
+
+## 2026-10-31: priority and expressed customer tone
+
+- Fetched and integrated main 7392441 (Andrii pitch deck); no agent/RAG changes conflicted.
+- User explicitly adds priority/emotional context to MVP scope. Contract 1.5 adds optional analysis metadata and priority sorting.
+- API computes priority from reported operational impact. Emotion alone never grants priority or action authority.
+- Gemma can classify expressed tone within the normal final answer; rules-based fallback is labeled explicitly.
+- Initial rules analysis survives provider outages. Conversation records and confirmation results preserve assessment history.
+- UI adds an expandable assessment card and tenant-scoped history sorting/markers. Old records remain compatible.
+- No raw customer data is added to global RAG or model credentials; RAG code and colleague pitch files were left intact.
+
+- Verification: 57 offline/API tests and the browser regression passed before the final explicit-confusion guard. Live Gemma returned customer_tone in its normal response. Added a guard so neutral model tone does not erase explicit confusion; attribution changes to rules when that guard applies.

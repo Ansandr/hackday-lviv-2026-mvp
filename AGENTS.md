@@ -97,3 +97,7 @@ Update the implementation checkpoint honestly. Distinguish implemented behavior 
 ## Current ownership update
 
 The user states Volodya cannot continue. Max owns remaining agent, mock SaaS, support API and UI integration. Andrii owns RAG and its documents.
+
+## Triage scope addition
+
+The user explicitly adds priority and expressed customer-tone assessment. Priority follows reported impact in server code. Tone can guide response style; neither changes authorization, required confirmation, or refund execution limits.

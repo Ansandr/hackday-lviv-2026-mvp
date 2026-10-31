@@ -11,6 +11,7 @@ from typing import Literal
 from src.support.adapters import ActionRejected, DependencyError, ModelUnavailable
 from src.support.models import AgentResponse, Strict
 from .evidence import kb_evidence, log_evidence
+from src.support.triage import assess
 
 
 class Search(Strict):
@@ -111,6 +112,12 @@ You can only read tools or propose an action. You cannot execute mutations, issu
 Return one JSON object per step: {"tool":"name","arguments":{...}} OR a final object
 {"reply":"...","state":"needs_input|unresolved|resolved","questions":[{"field":"...","prompt":"..."}],"proposal":null or {"type":"...","parameters":{...}}}.
 No markdown fences. Tool names and argument schemas are supplied below. Never invent identifiers or evidence.
+In a final response also include customer_tone: {emotion: neutral|confused|frustrated|angry|worried|positive|unknown,
+sentiment: negative|neutral|positive|unknown, rationale: short Ukrainian explanation based only on the latest customer's wording}.
+This describes expressed tone, not the person's personality or mental health. Use unknown when evidence is insufficient.
+An explicit "не розумію" or "заплутався" indicates confused even when the question is polite and calm.
+Adapt your reply: acknowledge frustration once, explain calmly for confusion, and use short concrete next steps for urgent operational impact.
+Do not mention your emotion classification to the customer or promise a resolution you cannot verify.
 Read search_kb for instructions. For promo failure read find_checkout, get_trace, get_promo_state before a proposal.
 Propose resync_pos only when logs and current state show a stale POS cache; expired/wrong-venue codes need an explanation.
 For double charge read get_billing_context and the linked traces. Distinguish pending authorizations and different businesses.
@@ -208,6 +215,7 @@ class Agent:
         current=datetime.now(timezone.utc)
         transcript=[{'current_time':current.isoformat(),'catalog':catalog,'history':history}]
         system=SYSTEM+'\nREAD TOOLS: '+json.dumps({k:v.model_json_schema() for k,v in TOOLS.items()})
+        system+='\nSERVER TRIAGE (style guidance only, not action authorization): '+assess(history).model_dump_json()
         evidence={}; repairs=0; calls=0; deadline=time.monotonic()+90
         # Bounded context prefetch avoids repeated network model round-trips for obvious cases.
         if self.prefetch:

@@ -8,7 +8,22 @@ function error(e){$('#error').textContent=e.message;$('#error').hidden=false;set
 function setBusy(value,text=''){busy=value;$('#progress').textContent=text;$('#send').disabled=value;$('#new').disabled=value;$('#logout').disabled=value;document.querySelectorAll('.actions button, .suggestions button, .retry-message').forEach(b=>b.disabled=value);}
 async function api(path, method='GET', body){const r=await fetch('/api/v1'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok){if(r.status===401){token=null;sessionStorage.removeItem('support-session');showLogin();}throw Error(data.error?.message||data.detail?.[0]?.msg||'Не вдалося виконати запит');}return data;}
 function showLogin(){$('#login').hidden=false;$('#workspace').hidden=true;}
-async function history(){const list=await api('/conversations');$('#history').replaceChildren();for(const c of list){const b=el('button',c.conversation_id===current?'active':'',c.title);b.onclick=()=>!busy&&load(c.conversation_id);$('#history').append(b);}}
+const priorityNames={low:'Низький',normal:'Звичайний',high:'Високий',urgent:'Критичний'};
+const emotionNames={neutral:'Нейтральний',confused:'Потрібне пояснення',frustrated:'Роздратування',angry:'Обурення',worried:'Занепокоєння',positive:'Позитивний',unknown:'Недостатньо даних'};
+function showAnalysis(analysis){
+  const panel=$('#analysis');panel.replaceChildren();panel.hidden=!analysis;if(!analysis)return;
+  const details=el('details','analysis-card'),summary=el('summary','analysis-summary');
+  summary.append(el('span','','Аналіз звернення'),el('span','priority-badge '+analysis.priority,'Пріоритет: '+(priorityNames[analysis.priority]||'Звичайний')),el('span','tone-badge','Тон: '+(emotionNames[analysis.customer_tone?.emotion]||'Недостатньо даних')));
+  details.append(summary);
+  const body=el('div','analysis-body');body.append(el('p','',analysis.priority_reason));
+  if(analysis.customer_tone?.rationale)body.append(el('p','',analysis.customer_tone.rationale));
+  const impact={none:'Роботу не зупинено',limited:'Окрема проблема',business_blocked:'Повідомлено про зупинку роботи',multiple_venues:'Зачеплено кілька закладів',unknown:'Вплив ще не визначено'};
+  const urgency={low:'Низька',normal:'Звичайна',high:'Висока'};
+  body.append(el('p','analysis-meta',`${impact[analysis.impact]||impact.unknown} · Терміновість: ${urgency[analysis.urgency]||urgency.normal}`));
+  body.append(el('p','analysis-meta',analysis.tone_source==='model'?'Орієнтовна оцінка тону за текстом · Gemma':'Орієнтовна оцінка тону за словами у повідомленні'));
+  details.append(body);panel.append(details);
+}
+async function history(){const list=await api('/conversations?sort='+$('#history-sort').value);$('#history').replaceChildren();for(const c of list){const b=el('button',c.conversation_id===current?'active':'');const p=c.analysis?.priority;if(p&&priorityNames[p]){const dot=el('span','priority-dot '+p);dot.title='Пріоритет: '+priorityNames[p];dot.setAttribute('aria-label',dot.title);b.append(dot);}b.append(el('span','history-title',c.title));b.onclick=()=>!busy&&load(c.conversation_id);$('#history').append(b);}}
 function addMessage(m,latest){const box=el('article','message '+m.role);if(m.role==='assistant')box.append(el('div','author','ЛІНІЯ · ПІДТРИМКА'));box.append(el('div','text',SupportPresentation.text(m.text)));const t=m.turn;if(t){for(const q of t.questions||[]){box.append(el('p','question',q.prompt));if(q.options)for(const option of q.options){const b=el('button','',option);b.onclick=()=>send(option);box.append(b);}}
 if(t.questions?.some(q=>q.field==='promo')){const b=el('button','','Заповнити приклад параметрів');b.onclick=()=>{$('#message').value=JSON.stringify({venue_id:'venue_01',discount_percent:20,starts_at:new Date().toISOString(),expires_at:new Date(Date.now()+7*86400000).toISOString(),max_redemptions:100},null,2);$('#message').focus();};box.append(b);}
 if(t.evidence?.length){const d=el('details','card'),s=el('summary','card-title','Що ми перевірили · '+t.evidence.length);d.append(s);const body=el('div','card-body');for(const e of t.evidence)body.append(el('span','evidence',`${e.kind==='kb'?'Правила сервісу':'Історія роботи'}\n${SupportPresentation.evidence(e)}`));d.append(body);box.append(d);}
@@ -35,7 +50,7 @@ function waiting(show){
   $('#agent-waiting')?.remove();
   if(show){const node=el('div','agent-waiting','Лінія готує відповідь…');node.id='agent-waiting';node.setAttribute('role','status');$('#thread').append(node);}
 }
-async function load(id){current=id;const c=await api('/conversations/'+id);const local=outbox.filter(e=>e.conversation_id===id);$('#welcome').hidden=c.messages.length>0||local.length>0;$('#thread').replaceChildren();c.messages.forEach((m,i)=>addMessage(m,i===c.messages.length-1));local.forEach(renderOutgoing);scrollThread();await history().catch(error);}
+async function load(id){current=id;const c=await api('/conversations/'+id);showAnalysis(c.analysis||c.latest_turn?.analysis);const local=outbox.filter(e=>e.conversation_id===id);$('#welcome').hidden=c.messages.length>0||local.length>0;$('#thread').replaceChildren();c.messages.forEach((m,i)=>addMessage(m,i===c.messages.length-1));local.forEach(renderOutgoing);scrollThread();await history().catch(error);}
 async function create(){const c=await api('/conversations','POST',{});await load(c.conversation_id);}
 async function enter(){await history();$('#login').hidden=true;$('#workspace').hidden=false;const list=await api('/conversations');if(list.length)await load(list[0].conversation_id);else await create();}
 async function send(text){
@@ -53,9 +68,9 @@ async function deliver(entry){
     entry.status='sent';updateOutgoing(entry);const index=outbox.indexOf(entry);if(index>=0)outbox.splice(index,1);waiting(false);
     try{await load(entry.conversation_id);}catch{
       // The reply already arrived. A failed history refresh must not mark it as unsent.
-      addMessage({role:'assistant',text:turn.reply,turn},true);history().catch(error);
+      addMessage({role:'assistant',text:turn.reply,turn},true);showAnalysis(turn.analysis);history().catch(error);
     }
-  }catch(e){entry.status='failed';entry.error=e.message;updateOutgoing(entry);}
+  }catch(e){entry.status='failed';entry.error=e.message;updateOutgoing(entry);if(token&&entry.conversation_id===current){try{const c=await api('/conversations/'+current);showAnalysis(c.analysis);}catch{}}}
   finally{waiting(false);setBusy(false);scrollThread();}
 }
 async function decide(id,decision){if(busy)return;setBusy(true,decision==='confirm'?'Виконуємо дію та перевіряємо результат…':'Відхиляємо пропозицію…');try{await api('/actions/'+id+'/confirm','POST',{decision});await load(current);}catch(e){error(e);$('#progress').textContent='Повторне підтвердження безпечне: використовується той самий ID дії.';}finally{setBusy(false);}}
@@ -67,3 +82,5 @@ $('#logout').onclick=async()=>{try{await api('/session','DELETE');}catch{}token=
 document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>send(b.dataset.prompt));
 api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · без AI':h.mode==='integrated'?'GEMMA · підключення':'АГЕНТ';$('#demo-hint').hidden=h.mode!=='demo';}).catch(error);
 if(token)enter().catch(error);
+
+$('#history-sort').onchange=()=>history().catch(error);

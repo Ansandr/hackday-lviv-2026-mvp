@@ -11,7 +11,8 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
     await page.addInitScript(() => sessionStorage.setItem('support-session', 'browser-test'));
     const messages = [], requests = [];
     let release, hold = true, fail = false, failHistory = false;
-    const turn = reply => ({schema_version:'1',conversation_id:'c',state:'needs_input',reply,questions:[],evidence:[],proposed_action:null,action_result:null});
+    const analysis={priority:'urgent',urgency:'high',impact:'business_blocked',priority_reason:'Клієнт повідомив про зупинку роботи.',customer_tone:{emotion:'worried',sentiment:'negative',rationale:'Клієнт висловлює занепокоєння.'},tone_source:'model'};
+    const turn = reply => ({schema_version:'1',conversation_id:'c',state:'needs_input',reply,questions:[],evidence:[],proposed_action:null,action_result:null,analysis});
     await page.route('**/api/v1/**', async route => {
       const request = route.request(), path = new URL(request.url()).pathname;
       if (request.method() === 'POST' && path.endsWith('/messages')) {
@@ -25,7 +26,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
       if (path.endsWith('/health')) return route.fulfill({json:{status:'ok',mode:'integrated'}});
       if (path.endsWith('/conversations')) return route.fulfill({json:[{conversation_id:'c',title:'Тест',state:'needs_input'}]});
       if (failHistory) return route.fulfill({status:503,json:{error:{message:'History unavailable'}}});
-      return route.fulfill({json:{conversation_id:'c',messages}});
+      return route.fulfill({json:{conversation_id:'c',messages,analysis:messages.length?analysis:null}});
     });
     await page.goto(process.env.SUPPORT_TEST_URL || 'http://127.0.0.1:8001');
     await page.locator('#workspace').waitFor({state:'visible'});
@@ -40,6 +41,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_PATH || 'playwright');
     await page.getByText('Відповідь на: Перший запит',{exact:true}).waitFor();
     assert.equal(await page.getByText('Перший запит',{exact:true}).count(), 1);
     assert.equal(await page.locator('#message').inputValue(), 'Чернетка наступного повідомлення');
+    assert.match(await page.locator('.priority-badge').innerText(),/Критичний/);
+    assert.match(await page.locator('.tone-badge').innerText(),/Занепокоєння/);
+    await page.locator('.analysis-summary').click();
+    await page.getByText('Орієнтовна оцінка тону за текстом · Gemma',{exact:true}).waitFor();
+    await Promise.all([page.waitForRequest(r=>r.url().includes('sort=priority')),page.locator('#history-sort').selectOption('priority')]);
 
     fail = true;
     await page.locator('#message').fill('Запит із помилкою');

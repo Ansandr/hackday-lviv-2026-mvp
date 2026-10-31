@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.1.0**. Date: 2026-10-31.
+Contract version: **1.2.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -230,3 +230,68 @@ Existing routes and payload fields remain unchanged. The action union gains crea
 Update exhaustive action validators and UI renderers before the agent emits this new variant.
 Backend adds refund_requests and its unique indexes. RAG policy must distinguish request registration from refund execution.
 The existing three actions retain their behavior. New behavior remains unimplemented until the corresponding code and checks are added.
+
+## Support service adapter boundary (1.2)
+
+User-directed topology: separate support frontend/API -> agent -> mock SaaS reads.
+Support confirmation -> SaaS executor applies the action. The agent still cannot execute mutations.
+The independent service is src/support/app.py; its static frontend is src/ui/.
+Existing /api/v1 conversation and action routes retain their shapes.
+Action previews add optional `preview: object` containing SaaS-validated display facts such as refund amount and currency.
+Stored messages may include optional `turn: AgentTurn` so history can render evidence and action results.
+
+Additional support routes:
+
+| Route | Request | Response |
+|---|---|---|
+| POST /api/v1/session | {token: string} | {access_token, expires_at, identity: {tenant_id, actor_id, role}} |
+| DELETE /api/v1/session | none | {ok: true} |
+| GET /api/v1/conversations | none | [{conversation_id, title, state, updated_at}] |
+| GET /api/v1/health | none | {status: ok, mode: demo or remote} |
+
+The browser supplies Authorization: Bearer session-token. Server config maps login codes to identities.
+Login credentials come from SUPPORT_ACCOUNTS, never from a browser-provided identity.
+Demo-only credentials are demo-a and demo-b. Remote mode has no built-in login credentials.
+Sessions expire after eight hours. Action previews expire after ten minutes.
+
+### Agent adapter
+
+`turn(context, conversation) -> AgentResponse`; HTTP adapter: POST SUPPORT_AGENT_URL/turn.
+Request is {context: RequestContext, conversation: stored conversation without message-deduplication records}.
+AgentResponse is {reply: string, state, questions: Question[], evidence: Evidence[], proposal: null or {type, parameters}}.
+state is investigating, needs_input, unresolved, or resolved. Proposal uses the existing four action variants.
+Question and Evidence retain the frontend shapes. The agent must return only evidence from authorized tool results.
+The agent does not generate action IDs, expiry, preconditions, execution results, or tenant identity.
+The API validates the response and creates an awaiting_confirmation turn when proposal is present.
+
+### SaaS adapter for action lifecycle
+
+`prepare(context, proposal, evidence) -> Prepared`; HTTP: POST SUPPORT_SAAS_URL/support/actions/prepare.
+Request is {context, proposal, evidence}. Prepared is {summary: string, preconditions: object, preview: object, evidence_ids: string[]}.
+Prepare is read-only: it checks ownership, evidence, eligibility, resource versions, and derives refund amount/currency.
+It must reject unauthorized resources, stale facts, invalid duplicate relationships, and unknown evidence.
+The API verifies evidence_ids are a subset of supplied evidence and stores the immutable validated preview.
+No product mutations happen at preparation.
+
+`execute(context, action) -> Execution`; HTTP: POST SUPPORT_SAAS_URL/support/actions/execute.
+Request is {context, action: stored action including parameters, preconditions, actor_id, conversation_id, evidence_ids, action_id}.
+Execution is {type, resource_id, before: object or null, after: object, verification: object}.
+Verification includes resolved:true only after an actual successful product read-back.
+Refund requests require persisted:true, funds_moved:false, and after.status=pending_review.
+API forces refund/cancellation conversations unresolved regardless of a model or executor resolution claim.
+Both adapter services receive a shared Authorization: Bearer SUPPORT_SERVICE_KEY over a trusted transport.
+Never expose these mutation endpoints as unauthenticated public model tools.
+Execute also receives Idempotency-Key equal to action_id. The SaaS must durably deduplicate and revalidate preconditions atomically.
+It must support replay/reconciliation with the same action ID after a lost response.
+
+Support state currently uses SQLite, behind Store, for independent startup. Product and RAG state remain MongoDB.
+This supersedes the initial assumption that all modules share one process and transaction.
+SaaS mutation/result/audit remain one product transaction. Support receipts are separate persistent records.
+One support API worker is supported; per-process serialization is not a distributed lock.
+Unknown execution outcomes stay executing and are reconciled using the same ID, never reissued with a new ID.
+
+Contract change notice 1.2.0 (2026-10-31): user explicitly requested independent support frontend/backend.
+Affected: agent owner implements turn; SaaS owner implements prepare/execute adapters; frontend consumes optional preview and history turns.
+Existing four action parameter shapes and public confirmation requests are unchanged.
+HTTP bridge paths are an adapter proposal for team integration, not a claim that the colleagues' services already expose them.
+Runtime details and launch commands: SUPPORT-SERVICE.md. No external team messages were sent.

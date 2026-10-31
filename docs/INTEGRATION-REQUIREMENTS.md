@@ -1,3 +1,5 @@
+> Topology update: the user now requests an independent support service. See CONTRACTS.md section "Support service adapter boundary (1.2)" and SUPPORT-SERVICE.md. Earlier single-process assumptions below are historical.
+
 # Вимоги до інтеграції: RAG + mock SaaS + агент/UI
 
 Статус: робочий документ інтеграції, 2026-10-31. Не є контрактом.

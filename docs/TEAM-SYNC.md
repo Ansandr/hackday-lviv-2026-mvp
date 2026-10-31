@@ -62,3 +62,18 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Embeddings: local Ollama `embeddinggemma` (768). Ticket extraction: hosted Gemma 4 (`GEMMA_MODEL`) with fallback to local `gemma3:4b`.
 - Checks: `python -m src.rag.ingest --reset` on local `mongodb-atlas-local`, then `pytest tests`: 17 passed (offline + live: three scenarios, intent filter, KbHit shape, pending never returned, tenant isolation, kb_global has no customer content).
 - Not yet done: Atlas shared cluster (guide in docs/ATLAS-SETUP.md), `search_kb` tool wrapper in the agent (agent owner), event name for retried signup in data/docs/error-codes.md is `SUBSCRIPTION_CREATE_RETRY` and must match the mock's logs.
+
+## 2026-10-31: independent support service branch
+
+- Started feat/support-service from origin/main eb072de after fetching all remote branches.
+- Main now includes the migrated RAG implementation and integration checklist. No SaaS or agent implementation was present in remote branches at inspection.
+- User explicitly requests an independent support frontend and backend with executable agent proposals.
+- Implemented src/support API, persistent conversations/session/action receipts, typed adapters and src/ui browser chat.
+- Four action cards use immutable server-prepared previews; confirmation calls the SaaS adapter, never a browser-selected tool.
+- Contract 1.2 records additional session/history routes and remote adapter boundaries. Existing action parameter shapes stay unchanged.
+- Deliberate support-only shortcut: SQLite, single API worker; product and RAG remain MongoDB. SaaS must implement atomic idempotent execution.
+- Demo mode is visibly labeled deterministic UI fixtures. It does not call AI or mutate the team's SaaS.
+- Remote mode requires the agent turn and SaaS prepare/execute adapters. Their actual live integration remains pending.
+- Launch and verification instructions: SUPPORT-SERVICE.md.
+
+- Verification: 16 support API tests passed; full suite before the final three support checks: 22 passed, 1 live RAG module skipped (MongoDB unavailable). Browser checks passed with headless Edge: login, proposal, confirm, refund, responsive layout, no JavaScript errors.

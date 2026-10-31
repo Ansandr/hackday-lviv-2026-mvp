@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.2.0**. Date: 2026-10-31.
+Contract version: **1.3.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -295,3 +295,32 @@ Affected: agent owner implements turn; SaaS owner implements prepare/execute ada
 Existing four action parameter shapes and public confirmation requests are unchanged.
 HTTP bridge paths are an adapter proposal for team integration, not a claim that the colleagues' services already expose them.
 Runtime details and launch commands: SUPPORT-SERVICE.md. No external team messages were sent.
+
+## Integrated agent and mock product (1.3)
+
+The user now assigns the remaining agent/mock integration to Max; Volodya is unavailable. Andrii continues RAG work.
+SUPPORT_MODE=integrated selects IntegratedBridge with an in-process Agent and Product. Public HTTP routes and four action parameter shapes are unchanged.
+Agent.turn returns the existing AgentResponse; it executes at most eight read tool calls and permits one schema repair.
+The server supplies the authenticated tenant catalog before the loop; it is not a new model tool.
+Only the dispatcher supplies evidence; a model-provided evidence field is rejected. Actions are checked against current product state before preview creation.
+Read tool parameters are strict. Unknown tools and model-supplied tenant fields are rejected.
+
+The bounded mock product stores one aggregate per tenant in MongoDB collection mock_tenant_state.
+This supersedes separate product collections for the demo implementation; public logical resource fields retain their meaning.
+Aggregate fields: tenant_id, version, venues, promos, pos_state, checkouts, subscriptions, payments, logs, refund_requests, executions, audit_events.
+_id is tenant_id. Every read includes authenticated tenant. Product mutation, execution receipt, and audit share one version-checked compare-and-swap write.
+This provides atomicity without a multi-document transaction. Concurrent writes retry CAS; resource changes invalidate outstanding previews.
+The aggregate is a bounded demo store, not an unbounded production data model.
+Explicit SUPPORT_PRODUCT_STORE=sqlite provides a local persisted aggregate with the same Product interface; MongoDB is the normal configured product backend.
+No mutation endpoint is exposed by the mock: confirmation invokes Product.execute internally.
+seed initializes only tenant_a and tenant_b. --reset resets those mock aggregates, not RAG or support conversations.
+
+Prepared preconditions contain the tenant aggregate version. Operational evidence must reference actual correlated tenant logs.
+Product.execute checks owner/actor, versions, eligibility, and the stored action ID. Replays return the original execution result.
+Refund requests are keyed by target payment within the tenant aggregate; later confirmed requests return the existing request ID.
+Two captured duplicate charges on one subscription permit a request without cancellation.
+
+SUPPORT_RAG_MODE=atlas uses Andrii's retrieve unchanged. Explicit files mode retrieves curated local documentation without embeddings and identifies sources as FILE-*.
+Files mode does not claim vector retrieval. No customer-ticket records are loaded by that fallback.
+Gemma uses the hosted API when configured, otherwise local Ollama. Missing model service fails explicitly; there is no fixture fallback in integrated mode.
+Contract change notice 1.3.0: explicit user request to finish the missing components. Agent/mock added by Max; no changes to Andrii's RAG files.

@@ -95,3 +95,17 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - The ownership mismatch between main's recorded assignment and the user's independent-service request remains documented above; no teammate work was overwritten.
 - Latest complete checks: 25 passed, 1 live RAG module skipped due to unavailable MongoDB; browser flow also passed.
 - AGENTS.md now explicitly requires inspecting relevant teammate branches and interface compatibility before every push.
+
+## 2026-10-31: Max takes agent and mock integration
+
+- User explicitly states Volodya cannot continue. Max now completes agent, SaaS mock, support API and existing UI; Andrii continues RAG in parallel.
+- Fetched main e9fa14e, andrii-rag eb072de, support-service e69ad0c before implementation. No new agent/mock code was published.
+- Implemented src/agent JSON Gemma tool loop, strict read dispatcher, server-derived evidence and product-validated proposals.
+- Implemented src/backend persisted two-tenant mock, correlated traces, four actions, version checks, atomic product/result/audit and refund deduplication.
+- IntegratedBridge connects these components without an HTTP server per module. Existing remote adapters remain available.
+- Product MongoDB uses one bounded tenant aggregate and atomic CAS; explicit SQLite fallback supports local integration. Local docs fallback is explicit, not vector search.
+- Added one-command launcher. There is no configured GEMINI_API_KEY, MONGODB_URI or reachable Ollama on this machine; live AI/Atlas validation remains blocked by environment setup.
+- No files under src/rag or data/docs were changed, preserving Andrii's ownership.
+- Tests cover three complete API flows using a scripted model and real product persistence, plus cancellation/refund separation, tenant boundaries, stale previews, budget and allowlist.
+
+- Increment published after 32 passing offline/API tests. User supplied an env file; it was installed only as ignored .env. GEMINI_API_KEY is present; standard MONGODB_URI was not supplied. Live provider checks are next.

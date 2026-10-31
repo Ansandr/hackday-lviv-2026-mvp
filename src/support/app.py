@@ -85,7 +85,7 @@ def create_app(store=None, bridge=None, accounts=None):
 
     @app.get("/api/v1/health")
     def health():
-        return {"status": "ok", "mode": "demo" if isinstance(bridge, DemoBridge) else "remote"}
+        return {"status": "ok", "mode": "demo" if isinstance(bridge, DemoBridge) else getattr(bridge, 'mode', 'remote')}
 
     @app.post("/api/v1/session")
     def login(body: Login):

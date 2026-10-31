@@ -25,5 +25,5 @@ $('#message').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();
 $('#new').onclick=()=>{if(!busy)create().catch(error);};
 $('#logout').onclick=async()=>{try{await api('/session','DELETE');}catch{}token=null;current=null;sessionStorage.removeItem('support-session');$('#history').replaceChildren();showLogin();};
 document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>send(b.dataset.prompt));
-api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · без AI':'АГЕНТ';$('#demo-hint').hidden=h.mode!=='demo';}).catch(error);
+api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · без AI':h.mode==='integrated'?'GEMMA · підключення':'АГЕНТ';$('#demo-hint').hidden=h.mode!=='demo';}).catch(error);
 if(token)enter().catch(error);

@@ -93,3 +93,7 @@ Run checks relevant to the changed behavior. Shared interfaces require producer/
 For the prototype, verify the three scenarios, tenant isolation, action confirmation, stale actions, and repeated execution.
 For documentation-only changes, check links, JSON examples, whitespace, and consistency with the current repository.
 Update the implementation checkpoint honestly. Distinguish implemented behavior from target behavior and mocks.
+
+## Current ownership update
+
+The user states Volodya cannot continue. Max owns remaining agent, mock SaaS, support API and UI integration. Andrii owns RAG and its documents.

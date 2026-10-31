@@ -86,6 +86,9 @@ class DemoBridge:
 
 
 def configured_bridge():
+    if os.getenv("SUPPORT_MODE", "remote") == "integrated":
+        from .integrated import IntegratedBridge
+        return IntegratedBridge()
     if os.getenv("SUPPORT_MODE", "remote") == "demo":
         return DemoBridge()
     return HttpBridge(os.getenv("SUPPORT_AGENT_URL", ""), os.getenv("SUPPORT_SAAS_URL", ""), os.getenv("SUPPORT_SERVICE_KEY", ""))

@@ -9,3 +9,4 @@ opencode.json
 *.sqlite3-*
 .pytest_cache/
 output/support/
+submission/

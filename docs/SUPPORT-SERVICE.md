@@ -16,7 +16,7 @@ At least one model connection is required:
 - Hosted: set GEMINI_API_KEY in local `.env`; GEMMA_MODEL selects the model.
 - Local: start Ollama, pull gemma3:4b, set SUPPORT_LLM=local and LOCAL_MODEL=gemma3:4b.
 
-No model credentials or Ollama are currently configured on Max's checked machine. Live model completion is therefore pending.
+A user-provided API key is installed in ignored local .env and a live Gemma JSON response was verified. Updated env also supplies MongoDB settings; Atlas connectivity and mock seed are verified. Local Ollama remains unavailable.
 Do not paste keys into Git. Add them only to `.env`.
 
 The launcher defaults explicitly to SUPPORT_PRODUCT_STORE=sqlite and SUPPORT_RAG_MODE=files for independent startup.

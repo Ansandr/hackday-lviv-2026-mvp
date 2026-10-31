@@ -125,3 +125,22 @@ def test_agent_tool_budget(setup):
         return tool('find_checkout',promo_code='AUTUMN20')
     response=Agent(p,model=model).turn(Context(tenant_id='tenant_a',actor_id='a',role='owner',request_id='r'),{'messages':[]})
     assert len(calls)==9 and response.state=='unresolved'
+
+
+def test_prefetch_supplies_real_evidence_in_one_model_call(setup):
+    _,p,*_=setup
+    agent=Agent(p,model=Script([final('resync_pos',venue_id='venue_01')]),retrieval=lambda q,c,i:[{'kb_id':'KB-1','text':'Policy','score':1.0}])
+    agent.prefetch=True
+    response=agent.turn(Context(tenant_id='tenant_a',actor_id='owner_a',role='owner',request_id='r'),{'messages':[{'role':'user','text':'Промокод не працює на касі'}]})
+    assert response.proposal.type=='resync_pos'
+    assert {e.id for e in response.evidence}=={'KB-1','log_pos_01','log_pos_02','log_pos_03'}
+
+
+def test_seed_reset_invalidates_old_preview(setup):
+    state,p,*_=setup
+    ctx=Context(tenant_id='tenant_a',actor_id='owner_a',role='owner',request_id='r')
+    proposal={'type':'resync_pos','parameters':{'venue_id':'venue_01'}}
+    prepared=p.prepare(ctx,proposal,[{'kind':'log','id':'log_pos_03','summary':'sync'}])
+    state.initialize('tenant_a',reset=True)
+    with pytest.raises(ActionRejected):
+        p.execute(ctx,{'action_id':'old','actor_id':ctx.actor_id,'conversation_id':'c','evidence_ids':['log_pos_03'],**proposal,'preconditions':prepared.preconditions})

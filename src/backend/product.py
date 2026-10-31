@@ -41,8 +41,11 @@ class LocalState:
 
     def initialize(self, tenant, reset=False):
         with self.store.lock:
-            if reset or self.load(tenant) is None:
-                self.store.put('product', tenant, tenant, seed_state(tenant))
+            current=self.load(tenant)
+            if reset or current is None:
+                fresh=seed_state(tenant)
+                if current: fresh['version']=current['version']+1
+                self.store.put('product', tenant, tenant, fresh)
 
     def change(self, tenant, fn):
         with self.store.lock:
@@ -70,7 +73,10 @@ class MongoState:
 
     def initialize(self, tenant, reset=False):
         if reset:
-            self.collection.replace_one({'_id':tenant}, {'_id':tenant,**seed_state(tenant)},upsert=True)
+            current=self.load(tenant)
+            fresh=seed_state(tenant)
+            if current: fresh['version']=current['version']+1
+            self.collection.replace_one({'_id':tenant}, {'_id':tenant,**fresh},upsert=True)
         else:
             self.collection.update_one({'_id':tenant},{'$setOnInsert':seed_state(tenant)},upsert=True)
 

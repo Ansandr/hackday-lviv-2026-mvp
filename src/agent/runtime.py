@@ -79,13 +79,22 @@ def sanitize(text):
 
 class Gemma:
     def __call__(self, system, transcript):
+        for attempt in range(2):
+            try:
+                return self.once(system,transcript)
+            except DependencyError as exc:
+                if attempt or getattr(exc.__cause__,'code',None) not in (429,500,502,503,504):
+                    raise
+                time.sleep(1)
+
+    def once(self, system, transcript):
         prompt=system+'\n\nUNTRUSTED_DATA_JSON:\n'+sanitize(json.dumps(transcript,ensure_ascii=False,default=str))
         try:
             if os.getenv('GEMINI_API_KEY') and os.getenv('SUPPORT_LLM','api')=='api':
                 from google import genai
                 from google.genai import types
-                with genai.Client(api_key=os.environ['GEMINI_API_KEY'],http_options=types.HttpOptions(timeout=20000)) as client:
-                    response=client.models.generate_content(model=os.getenv('GEMMA_MODEL','gemma-4-26b-a4b-it'),contents=prompt,config=types.GenerateContentConfig(temperature=0,response_mime_type='application/json'))
+                with genai.Client(api_key=os.environ['GEMINI_API_KEY'],http_options=types.HttpOptions(timeout=45000)) as client:
+                    response=client.models.generate_content(model=os.getenv('GEMMA_MODEL','gemma-4-26b-a4b-it'),contents=prompt,config=types.GenerateContentConfig(temperature=0,max_output_tokens=1200,response_mime_type='application/json'))
                     raw=response.text
             else:
                 with httpx.Client(timeout=20) as client:
@@ -117,6 +126,7 @@ class Agent:
         self.product=product
         self.model=model or Gemma()
         self.retrieval=retrieval or retrieve
+        self.prefetch=model is None
 
     def turn(self, ctx, conversation):
         from datetime import datetime,timezone
@@ -124,6 +134,36 @@ class Agent:
         transcript=[{'current_time':datetime.now(timezone.utc).isoformat(),'catalog':catalog,'history':conversation['messages'][-24:]}]
         system=SYSTEM+'\nREAD TOOLS: '+json.dumps({k:v.model_json_schema() for k,v in TOOLS.items()})
         evidence={}; repairs=0; calls=0; deadline=time.monotonic()+90
+        # Bounded context prefetch avoids repeated network model round-trips for obvious cases.
+        if self.prefetch:
+            from src.support.models import Evidence
+            text=conversation['messages'][-1]['text'] if conversation['messages'] else ''
+            lower=text.lower()
+            intent='double_charge' if any(w in lower for w in ('спис','підпис','рефанд','повернен','платіж')) else 'promo_how_to' if any(w in lower for w in ('створ','знижк','відсот')) else 'promo_not_applied' if any(w in lower for w in ('промокод','кас')) else None
+            if intent:
+                try:
+                    hits=self.retrieval(text,ctx,intent);calls+=1
+                    for h in hits: evidence[h['kb_id']]=Evidence(kind='kb',id=h['kb_id'],summary=h['text'][:300])
+                    transcript.append({'tool':'search_kb','result':{'ok':True,'data':{'hits':hits}}})
+                except Exception:
+                    transcript.append({'tool':'search_kb','result':{'ok':False,'error':'RAG unavailable'}})
+                plans=[]
+                if intent=='double_charge' and len(catalog['business_ids'])==1:
+                    plans=[('get_billing_context',{'business_id':catalog['business_ids'][0]})]
+                elif intent=='promo_not_applied' and len(catalog['venues'])==1:
+                    plans=[('find_checkout',{'venue_id':next(iter(catalog['venues']))})]
+                for name,args in plans:
+                    data=self.product.tool(ctx,name,args);calls+=1
+                    transcript.append({'tool':name,'result':{'ok':True,'data':data}})
+                    if name=='get_billing_context': traces=data['trace_ids'][:1]
+                    else: traces=list({c['trace_id'] for c in data})[:1]
+                    for trace in traces:
+                        logs=self.product.tool(ctx,'get_trace',{'trace_id':trace});calls+=1
+                        transcript.append({'tool':'get_trace','result':{'ok':True,'data':logs}})
+                        for event in logs: evidence[event['log_id']]=Evidence(kind='log',id=event['log_id'],summary=event['event']+' · '+json.dumps(event['safe_details'],ensure_ascii=False))
+                    if name=='find_checkout' and data:
+                        c=data[0];promo=self.product.tool(ctx,'get_promo_state',{'code':c['promo_code'],'venue_id':c['venue_id']});calls+=1
+                        transcript.append({'tool':'get_promo_state','result':{'ok':True,'data':promo}})
         for _ in range(9):
             if time.monotonic()>deadline:
                 break

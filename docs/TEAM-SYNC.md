@@ -124,3 +124,12 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Integration: one in-process bridge object passed to `create_app(bridge=...)`; contract 1.2 governs where older docs conflict.
 
 - Pre-push synchronization found main 326b7a3: Andrii has taken ownership of agent/mock in parallel. Keep this implementation on feat/support-service for comparison/integration; do not overwrite his unpushed work. Preserve his owner checkpoint above.
+
+- User clarified that Andrii did not take agent/mock ownership; Max owns this work and authorizes integrating this implementation as primary. The intermediate owner entries assigning those modules to Andrii are superseded.
+- Env key was verified with a live Gemma JSON response. The hosted model intermittently returns server errors; bounded retry added. Standard MongoDB settings are absent, so local persisted product + explicit curated-file retrieval are used for the first launch.
+
+- Updated env now supplies Gemini, Mongo writer and reader URI settings (values never logged or committed). Atlas connectivity verified: kb_global=17 and kb_tenant=11 at inspection; local Ollama is unavailable.
+- Mock tenant aggregates seeded successfully in Atlas. Live Gemma promo diagnosis and confirmed resync succeeded; live promo creation also persisted a generated code.
+- Live billing diagnosis returned correct cancel_duplicate_subscription with an explicit no-refund explanation. Hosted provider intermittently fails; bounded retries are enabled.
+- Fetch found fe3ad52 from Andrii with alternate agent/agent.py, agent/serve.py, backend/mock_saas.py. Preserve these files and their tests; integrated runtime.py/product.py remain the user-authorized primary persisted implementation.
+- Latest offline/API checks: 34 passed. Vector RAG remains unverified on this machine until Ollama embeddinggemma is available; curated-file fallback is explicit.

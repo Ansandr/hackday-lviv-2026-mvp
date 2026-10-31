@@ -29,20 +29,22 @@ s.addNotes("Ми будуємо не чат-бот, а службу підтри
 // 2. Problem
 s = pres.addSlide(); s.background = { color: LIGHT };
 title(s, "Проблема: кожне звернення читає людина");
-s.addText("75%", { x: 0.5, y: 1.3, w: 3.6, h: 1.4, fontFace: H, fontSize: 72, bold: true, color: RED, margin: 0 });
-s.addText("історичних тікетів закриваються документацією або однією дією в системі (9 з 12 у нашому корпусі)", { x: 0.5, y: 2.75, w: 3.6, h: 1.0, fontFace: B, fontSize: 14, color: INK, margin: 0 });
+s.addText("75%", { x: 0.5, y: 1.3, w: 2.9, h: 1.4, fontFace: H, fontSize: 72, bold: true, color: RED, margin: 0 });
+s.addText("історичних тікетів закриваються документацією або однією дією в системі (9 з 12 у нашому корпусі)", { x: 0.5, y: 2.75, w: 2.9, h: 1.3, fontFace: B, fontSize: 13, color: INK, margin: 0 });
 const pains = [
   ["Довго", "Власник закладу чекає години, поки промокод на касі запрацює"],
   ["Дорого", "Саппорт і розробники витрачають час на однакові питання"],
   ["Ризиковано", "Людина помиляється: у тікеті TCK-1010 скасовано обидві підписки і пообіцяно повернення, якого не було"],
 ];
 pains.forEach(([h, t], i) => {
-  const y = 1.3 + i * 1.25; card(s, 4.6, y, 4.9, 1.05);
-  dot(s, 4.8, y + 0.27, String(i + 1));
-  s.addText(h, { x: 5.5, y: y + 0.1, w: 3.8, h: 0.35, fontFace: B, fontSize: 16, bold: true, color: INK, margin: 0 });
-  s.addText(t, { x: 5.5, y: y + 0.45, w: 3.85, h: 0.55, fontFace: B, fontSize: 12, color: MUTED, margin: 0 });
+  const y = 1.3 + i * 1.25; card(s, 5.55, y, 3.95, 1.05);
+  dot(s, 5.7, y + 0.27, String(i + 1));
+  s.addText(h, { x: 6.35, y: y + 0.1, w: 3.0, h: 0.35, fontFace: B, fontSize: 16, bold: true, color: INK, margin: 0 });
+  s.addText(t, { x: 6.35, y: y + 0.45, w: 3.05, h: 0.55, fontFace: B, fontSize: 10.5, color: MUTED, margin: 0 });
 });
-s.addNotes("Наш корпус з 12 минулих тікетів: 5 закриваються поясненням з документації, 4 однією дією (resync каси, створення промокоду, скасування дубля). Ще 2 це атаки, 1 це помилка людини, яка коштувала грошей і довіри.");
+s.addImage({ path: "C:/Workspace/04_Projects/Software/2026-10-31_hackday-lviv-gemma/docs/pitch/assets/calls-fictional.png", x: 3.55, y: 1.25, w: 1.8, h: 3.9 });
+s.addText("Дзвінки власників закладів (імена вигадані)", { x: 3.4, y: 5.17, w: 2.1, h: 0.3, fontFace: B, fontSize: 8, color: MUTED, align: "center", margin: 0 });
+s.addNotes("Так виглядає день підтримки: дзвінки від власників закладів. Наш корпус з 12 минулих тікетів: 5 закриваються поясненням з документації, 4 однією дією (resync каси, створення промокоду, скасування дубля). Ще 2 це атаки, 1 це помилка людини, яка коштувала грошей і довіри.");
 
 // 3. Solution
 s = pres.addSlide(); s.background = { color: WHITE };
@@ -71,8 +73,10 @@ steps.forEach(([h, t], i) => {
   s.addText(h, { x: x + 0.08, y: 2.3, w: 1.22, h: 0.4, fontFace: B, fontSize: 11.5, bold: true, color: INK, align: "center", margin: 0 });
   s.addText(t, { x: x + 0.08, y: 2.7, w: 1.22, h: 0.75, fontFace: B, fontSize: 10.5, color: MUTED, align: "center", margin: 0 });
 });
-s.addText("Модель лише читає і пропонує. Гроші, права і ізоляція клієнтів контролюються кодом, а не промптом.", { x: 0.5, y: 4.0, w: 9, h: 0.6, fontFace: B, fontSize: 15, italic: true, color: INK, margin: 0 });
-s.addNotes("Ключ: агент не має доступу до мутацій. Він пропонує одну з 4 дій, сервер сам перевіряє права, версії ресурсів і суму, а виконання можливе лише після підтвердження власника.");
+s.addText("Модель лише читає і пропонує. Гроші, права і ізоляція клієнтів контролюються кодом, а не промптом.", { x: 0.5, y: 3.85, w: 5.4, h: 1.0, fontFace: B, fontSize: 14, italic: true, color: INK, margin: 0 });
+s.addImage({ path: "C:/Workspace/04_Projects/Software/2026-10-31_hackday-lviv-gemma/docs/pitch/assets/photo_2026-10-31_16-50-17.jpg", x: 6.2, y: 3.62, w: 2.2, h: 1.99 });
+s.addText("Нерозв'язане → тікет розробникам у Telegram", { x: 8.45, y: 4.2, w: 1.3, h: 0.9, fontFace: B, fontSize: 8.5, color: MUTED, margin: 0 });
+s.addNotes("Якщо після дії проблема лишилась, система сама формує тікет для розробників з пріоритетом, тоном клієнта, логами і джерелами та надсилає в Telegram. Ключ: агент не має доступу до мутацій. Він пропонує одну з 4 дій, сервер сам перевіряє права, версії ресурсів і суму, а виконання можливе лише після підтвердження власника.");
 
 // 5. Gemma
 s = pres.addSlide(); s.background = { color: WHITE };

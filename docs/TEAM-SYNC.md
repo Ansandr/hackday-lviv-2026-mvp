@@ -77,3 +77,12 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Launch and verification instructions: SUPPORT-SERVICE.md.
 
 - Verification: 16 support API tests passed; full suite before the final three support checks: 22 passed, 1 live RAG module skipped (MongoDB unavailable). Browser checks passed with headless Edge: login, proposal, confirm, refund, responsive layout, no JavaScript errors.
+
+## 2026-10-31: module owners assigned
+
+- `src/backend/` (mock SaaS, seed, 4 actions, FastAPI `/api/v1` app): Макс (denisk0m).
+- `src/agent/` (Gemma tool loop, dispatcher, `search_kb` wrapper, AgentTurn) and `src/ui/`: Володя (Husiak-V).
+- `src/rag/`, `data/`: Andrii.
+- Seam: agent calls `src/backend` Python methods and `src.rag.retrieve()` in-process; UI talks only to `/api/v1` (docs/INTEGRATION-REQUIREMENTS.md).
+
+- Synchronization: merged origin/main e9fa14e into feat/support-service. Kept both team checkpoint entries. Its owner assignment and single-process seam describe the parallel main plan; this branch implements the user-requested independent support service. Reconcile ownership with teammates before integrating duplicate UI/API work.

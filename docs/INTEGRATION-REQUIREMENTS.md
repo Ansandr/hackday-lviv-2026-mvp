@@ -24,9 +24,9 @@
 | Компонент | Папка | Відповідальність | Власник |
 |---|---|---|---|
 | RAG | `src/rag/`, `data/docs/` | Ingestion, embeddinggemma, `kb_global`/`kb_tenant`, `retrieve()` з tenant prefilter, redaction | Andrii |
-| Mock product + DB | `src/backend/` (ще немає) | Колекції promos, pos_state, checkouts, subscriptions, payments, refund_requests, logs, actions, audit_events; seed двох тенантів; read-методи для інструментів; транзакційне виконання 4 дій | **ВІДКРИТЕ ПИТАННЯ Q1** |
-| API + агент | `src/agent/` (ще немає) | FastAPI, сесії/демо-логін, conversations, Gemma tool loop, диспетчер, `search_kb`-обгортка, confirm endpoint | Тіммейт "агент" (Q1) |
-| UI | `src/ui/` (ще немає) | Чат, questions, evidence, preview дії, кнопки confirm/reject, ActionResult | Тіммейт "UI" (Q1) |
+| Mock product + DB | `src/backend/` (ще немає) | Колекції promos, pos_state, checkouts, subscriptions, payments, refund_requests, logs, actions, audit_events; seed двох тенантів; read-методи для інструментів; транзакційне виконання 4 дій | Макс (denisk0m), включно з FastAPI `/api/v1` |
+| API + агент | `src/agent/` (ще немає) | FastAPI, сесії/демо-логін, conversations, Gemma tool loop, диспетчер, `search_kb`-обгортка, confirm endpoint | Володя (Husiak-V); FastAPI-роути пише Макс |
+| UI | `src/ui/` (ще немає) | Чат, questions, evidence, preview дії, кнопки confirm/reject, ActionResult | Володя (Husiak-V) |
 
 CLAUDE.md перелічує тільки `src/agent`, `src/rag`, `src/ui`; README пропонує ще `src/backend/`. Хто пише mock і seed, не призначено.
 
@@ -157,7 +157,7 @@ CLAUDE.md перелічує тільки `src/agent`, `src/rag`, `src/ui`; READ
 
 | # | Питання | Кому |
 |---|---|---|
-| Q1 | Хто пише `src/backend/` (mock + seed + дії)? CLAUDE.md його не перелічує. Хто власник агента й UI поіменно? | вся команда |
+| Q1 | Хто пише `src/backend/` (mock + seed + дії)? CLAUDE.md його не перелічує. Хто власник агента й UI поіменно? | **Вирішено:** backend + FastAPI = Макс (denisk0m); agent + UI = Володя (Husiak-V); RAG = Andrii |
 | Q2 | Сигнатури Python-методів backend для 5 read-інструментів і `propose_action`/`execute` (форми даних уже в CONTRACTS.md) | backend + агент |
 | Q3 | Порт API (`8000`?) і чи UI віддається тим самим FastAPI, чи окремий dev-сервер (тоді потрібні CORS + CSRF) | агент + UI |
 | Q4 | Виправити `EMBED_MODEL` у `.env.example` на `embeddinggemma`; привести ім'я користувача в URI (`app_reader`) до ATLAS-SETUP (`app_writer`/`rag_reader`) | Andrii |

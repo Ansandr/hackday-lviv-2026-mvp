@@ -1,0 +1,11 @@
+{
+  "ingest_cli": "python -m src.rag.ingest [--reset]",
+  "retrieve_cli": "python -m src.rag.retrieve <query>",
+  "retrieve_fn": "src/rag/retrieve.py:retrieve",
+  "request_context": "src/rag/retrieve.py:RequestContext",
+  "ingest_ticket_fn": "src/rag/ingest.py:ingest_ticket",
+  "security": "src/rag/sanitize.py",
+  "db": "src/rag/db.py",
+  "models": "src/rag/llm.py",
+  "tests": ["tests/test_rag_offline.py", "tests/test_rag_live.py"]
+}

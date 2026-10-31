@@ -5,7 +5,7 @@ const labels = {resync_pos:'Синхронізація каси',cancel_duplicat
 const fields = {venue_id:'Заклад',business_id:'Бізнес',subscription_id:'Зайва підписка',retained_subscription_id:'Основна підписка',discount_percent:'Знижка, %',starts_at:'Початок',expires_at:'Діє до',max_redemptions:'Використання',payment_id:'Платіж',related_payment_id:'Пов’язаний платіж',amount_minor:'Сума в мінімальних одиницях',currency:'Валюта',venue_name:'Заклад'};
 function el(tag, cls, text){const x=document.createElement(tag); if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
 function error(e){$('#error').textContent=e.message;$('#error').hidden=false;setTimeout(()=>$('#error').hidden=true,8000);}
-function setBusy(value,text=''){busy=value;$('#progress').textContent=text;$('#send').disabled=value;$('#new').disabled=value;$('#logout').disabled=value;document.querySelectorAll('.actions button, .suggestions button, .retry-message').forEach(b=>b.disabled=value);}
+function setBusy(value,text=''){busy=value;$('#progress').textContent=text;$('#send').disabled=value;$('#new').disabled=value;$('#logout').disabled=value;document.querySelectorAll('.actions button, .suggestions button, .retry-message, .resolution-actions button, .ticket-retry').forEach(b=>b.disabled=value);}
 async function api(path, method='GET', body){const r=await fetch('/api/v1'+path,{method,headers:{'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})},...(body!==undefined?{body:JSON.stringify(body)}:{})});const data=await r.json();if(!r.ok){if(r.status===401){token=null;sessionStorage.removeItem('support-session');showLogin();}throw Error(data.error?.message||data.detail?.[0]?.msg||'Не вдалося виконати запит');}return data;}
 function showLogin(){$('#login').hidden=false;$('#workspace').hidden=true;}
 const priorityNames={low:'Низький',normal:'Звичайний',high:'Високий',urgent:'Критичний'};
@@ -28,6 +28,24 @@ function addMessage(m,latest){const box=el('article','message '+m.role);if(m.rol
 if(t.questions?.some(q=>q.field==='promo')){const b=el('button','','Заповнити приклад параметрів');b.onclick=()=>{$('#message').value=JSON.stringify({venue_id:'venue_01',discount_percent:20,starts_at:new Date().toISOString(),expires_at:new Date(Date.now()+7*86400000).toISOString(),max_redemptions:100},null,2);$('#message').focus();};box.append(b);}
 if(t.evidence?.length){const d=el('details','card'),s=el('summary','card-title','Що ми перевірили · '+t.evidence.length);d.append(s);const body=el('div','card-body');for(const e of t.evidence)body.append(el('span','evidence',`${e.kind==='kb'?'Правила сервісу':'Історія роботи'}\n${SupportPresentation.evidence(e)}`));d.append(body);box.append(d);}
 if(t.proposed_action){const a=t.proposed_action,card=el('div','card');card.append(el('div','card-title',labels[a.type]||a.type));const body=el('div','card-body');body.append(el('div','',a.summary));const dl=el('dl','params');for(const [k,v] of Object.entries({...a.parameters,...a.preview})){if(k==='demo'||(k==='venue_id'&&a.preview?.venue_name))continue;dl.append(el('dt','',fields[k]||k),el('dd','',SupportPresentation.parameter(k,v)));}body.append(dl,el('div','evidence','Дійсна до '+new Date(a.expires_at).toLocaleTimeString('uk-UA')));if(a.type==='create_refund_request')body.append(el('p','','Це запит на розгляд. Гроші автоматично не повертаються.'));if(latest){const buttons=el('div','actions');for(const [decision,title] of [['confirm','Підтвердити'],['reject','Відмовитися']]){const b=el('button',decision,title);b.onclick=()=>decide(a.action_id,decision);buttons.append(b);}body.append(buttons);}else body.append(el('div','evidence','Попередня пропозиція · перегляньте актуальний стан розмови'));card.append(body);box.append(card);}
+if(t.resolution_prompt){
+ const prompt=t.resolution_prompt,card=el('div','card resolution-card');card.append(el('div','card-title',prompt.question));
+ const body=el('div','card-body');
+ if(latest){
+  const comment=el('textarea','resolution-comment');comment.rows=2;comment.maxLength=2000;comment.placeholder='Що залишилося невирішеним? (необов’язково)';comment.setAttribute('aria-label','Коментар до результату');
+  body.append(comment,el('p','evidence','Якщо проблема залишилася, передамо опис і діагностику команді в Telegram.'));
+  const buttons=el('div','actions resolution-actions');
+  for(const [resolved,title] of [[true,'Так, вирішено'],[false,'Ні, створити тікет']]){const b=el('button',resolved?'confirm':'',title);b.type='button';b.onclick=()=>feedback(prompt.prompt_id,resolved,comment.value);buttons.append(b);}body.append(buttons);
+ }else body.append(el('div','evidence','Подальша відповідь збережена в історії розмови.'));
+ card.append(body);box.append(card);
+}
+if(t.support_ticket){
+ const ticket=t.support_ticket,card=el('div','card');card.append(el('div','card-title','Тікет '+ticket.ticket_id));const body=el('div','card-body');
+ const d=ticket.delivery||{};
+ const deliveryText=d.status==='sent'?`Надіслано команді в Telegram: ${d.delivered} із ${d.recipients}.`:d.uncertain?'Тікет збережено. Статус частини відправлень потребує перевірки; автоматичного дублювання не буде.':d.status==='partial'?`Тікет збережено. Надіслано ${d.delivered} із ${d.recipients}; решту можна надіслати повторно.`:'Тікет збережено. Надсилання в Telegram ще не завершене.';
+ body.append(el('p','',deliveryText));
+ if(d.status!=='sent'&&!d.uncertain){const b=el('button','ticket-retry','Повторити надсилання');b.type='button';b.onclick=()=>retryTicket(ticket.ticket_id);body.append(b);}card.append(body);box.append(card);
+}
 if(t.action_result){const a=t.action_result;const names={succeeded:'Виконано',failed:'Не виконано',rejected:'Відхилено',expired:'Пропозиція застаріла',executing:'Перевіряємо результат'};let text=names[a.status]||a.status;if(a.result){if(a.result.after.demo)text='Демонстрація завершена';else text+=' · '+a.result.resource_id;if(a.result.type==='create_refund_request')text+=' · Очікує розгляду';}if(a.error)text+='\n'+a.error.message;box.append(el('div','result',text));}}
 $('#thread').append(box);return box;}
 function scrollThread(){$('#thread').scrollTop=$('#thread').scrollHeight;}
@@ -84,3 +102,12 @@ api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · бе
 if(token)enter().catch(error);
 
 $('#history-sort').onchange=()=>history().catch(error);
+
+async function feedback(promptId,resolved,comment){
+ if(busy)return;setBusy(true,resolved?'Зберігаємо підтвердження…':'Формуємо тікет і надсилаємо діагностику команді…');
+ try{await api('/conversations/'+current+'/feedback','POST',{prompt_id:promptId,resolved,comment});await load(current);}catch(e){error(e);}finally{setBusy(false);}
+}
+async function retryTicket(id){
+ if(busy)return;setBusy(true,'Перевіряємо надсилання тікета…');
+ try{await api('/tickets/'+id+'/delivery','POST',{});await load(current);}catch(e){error(e);}finally{setBusy(false);}
+}

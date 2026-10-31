@@ -14,10 +14,11 @@ from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
 from .adapters import ActionRejected, DependencyError, DemoBridge, ModelUnavailable, configured_bridge
-from .models import Context, Decision, Login, MessageInput
+from .models import Context, Decision, Login, MessageInput, ResolutionFeedback
 from .store import Store
 from .triage import assess, PRIORITY_ORDER
 from typing import Literal
+from .tickets import Tickets, parse_resolution
 
 
 def now():
@@ -36,7 +37,7 @@ def fail(status, code, message):
     raise HTTPException(status, {"code": code, "message": message, "retryable": status == 503})
 
 
-def create_app(store=None, bridge=None, accounts=None):
+def create_app(store=None, bridge=None, accounts=None, notifier=None):
     app = FastAPI(title="Venue Support API", version="1.2.0")
     store = store or Store(os.getenv("SUPPORT_DB", "support.sqlite3"))
     bridge = bridge or configured_bridge()
@@ -45,6 +46,7 @@ def create_app(store=None, bridge=None, accounts=None):
         if isinstance(bridge, DemoBridge) and not accounts:
             accounts = {"demo-a": {"tenant_id": "tenant_a", "actor_id": "owner_a", "role": "owner"}, "demo-b": {"tenant_id": "tenant_b", "actor_id": "owner_b", "role": "owner"}}
     app.state.store, app.state.bridge = store, bridge
+    tickets=Tickets(store,notifier)
 
     @app.middleware("http")
     async def headers(request, call_next):
@@ -85,6 +87,17 @@ def create_app(store=None, bridge=None, accounts=None):
         c["updated_at"] = stamp()
         store.put("conversation", c["conversation_id"], ctx.tenant_id, c)
 
+    def ask_resolution(c,turn,ask):
+        prompt={'prompt_id':identifier('feedback'),'question':'Чи вдалося вирішити вашу проблему?'} if ask else None
+        turn['resolution_prompt']=prompt;c['resolution_prompt']=prompt
+
+    def update_ticket_card(c,summary,ctx):
+        for message in c['messages']:
+            turn=message.get('turn') or {}
+            if (turn.get('support_ticket') or {}).get('ticket_id')==summary['ticket_id']:turn['support_ticket']=summary
+        if ((c.get('latest_turn') or {}).get('support_ticket') or {}).get('ticket_id')==summary['ticket_id']:c['latest_turn']['support_ticket']=summary
+        save_conversation(c,ctx)
+
     @app.get("/api/v1/health")
     def health():
         return {"status": "ok", "mode": "demo" if isinstance(bridge, DemoBridge) else getattr(bridge, 'mode', 'remote')}
@@ -121,7 +134,7 @@ def create_app(store=None, bridge=None, accounts=None):
     @app.get("/api/v1/conversations/{conversation_id}")
     def get_conversation(conversation_id: str, ctx=Depends(context)):
         c = owned("conversation", conversation_id, ctx)
-        return {k: v for k, v in c.items() if k != "requests"}
+        return {k: v for k, v in c.items() if k not in ('requests','feedback_responses')}
 
     @app.post("/api/v1/conversations/{conversation_id}/messages")
     def message(conversation_id: str, body: MessageInput, ctx=Depends(context)):
@@ -138,13 +151,24 @@ def create_app(store=None, bridge=None, accounts=None):
             previous = (c.get("latest_turn") or {}).get("proposed_action")
             if previous and owned("action", previous["action_id"], ctx)["status"] == "executing":
                 fail(409, "CONVERSATION_BUSY", "Спочатку перевірте результат попередньої дії")
+            feedback=parse_resolution(body.text) if c.get('resolution_prompt') else None
+            if feedback is not None:
+                prompt_id=c['resolution_prompt']['prompt_id']
+                resolution_feedback(conversation_id,ResolutionFeedback(prompt_id=prompt_id,resolved=feedback[0],comment=feedback[1]),ctx)
+                c=owned('conversation',conversation_id,ctx)
+                for m in c['messages']:
+                    if m['message_id']=='feedback_user_'+prompt_id:m['text']=body.text
+                turn=c['latest_turn']
+                c['requests'][body.client_message_id]={'text':body.text,'turn':turn}
+                save_conversation(c,ctx)
+                return turn
             candidate = {**c, "messages": c["messages"] + [{"message_id": identifier("msg"), "role": "user", "text": body.text, "created_at": stamp()}]}
             # Triage is available even if the hosted model is temporarily down.
             c['analysis']=assess(candidate['messages']).model_dump()
             candidate['analysis']=c['analysis']
             if c['title']=='Нове звернення': c['title']=body.text[:64]
             save_conversation(c,ctx)
-            public = {k: v for k, v in candidate.items() if k != "requests"}
+            public = {k: v for k, v in candidate.items() if k not in ('requests','feedback_responses')}
             try:
                 response = bridge.turn(ctx, public)
                 action = None
@@ -174,6 +198,7 @@ def create_app(store=None, bridge=None, accounts=None):
             analysis=assess(candidate['messages'],response.customer_tone).model_dump()
             turn = {"schema_version": "1", "conversation_id": conversation_id, "state": "awaiting_confirmation" if action else response.state, "reply": response.reply, "questions": [q.model_dump(exclude_none=True) for q in response.questions], "evidence": [e.model_dump() for e in response.evidence], "proposed_action": action, "action_result": None,'analysis':analysis}
             c['analysis']=analysis
+            ask_resolution(c,turn,not action and not response.questions and (response.state=='resolved' or bool(response.evidence)))
             c["messages"] = candidate["messages"] + [{"message_id": identifier("msg"), "role": "assistant", "text": response.reply, "created_at": stamp(), "turn": turn}]
             c["latest_turn"], c["state"] = turn, turn["state"]
             c["title"] = body.text[:64] if c["title"] == "Нове звернення" else c["title"]
@@ -243,10 +268,63 @@ def create_app(store=None, bridge=None, accounts=None):
                 if a["type"] == "create_promo" and a["result"]["after"].get("code"):
                     text += " Промокод: " + str(a["result"]["after"]["code"])
             turn = {"schema_version": "1", "conversation_id": c["conversation_id"], "state": state, "reply": text, "questions": [], "evidence": [], "proposed_action": None, "action_result": action_result(a),'analysis':c.get('analysis')}
+            ask_resolution(c,turn,a['status'] in ('succeeded','failed'))
             c["messages"].append({"message_id": identifier("msg"), "role": "assistant", "text": text, "created_at": stamp(), "turn": turn})
             c["latest_turn"], c["state"] = turn, state
             save_conversation(c, ctx)
             return action_result(a)
+
+    @app.post('/api/v1/conversations/{conversation_id}/feedback')
+    def resolution_feedback(conversation_id:str,body:ResolutionFeedback,ctx=Depends(context)):
+        with store.lock:
+            c=owned('conversation',conversation_id,ctx)
+            responses=c.setdefault('feedback_responses',{})
+            cached=responses.get(body.prompt_id)
+            if cached:
+                if cached['resolved']!=body.resolved or cached['comment']!=body.comment:
+                    fail(409,'FEEDBACK_ALREADY_RECORDED','Відповідь на це запитання вже збережена')
+            else:
+                if not c.get('resolution_prompt') or c['resolution_prompt']['prompt_id']!=body.prompt_id:
+                    fail(409,'STALE_FEEDBACK','Це запитання вже не актуальне. Перевірте останню відповідь.')
+                ticket=None if body.resolved else tickets.build(ctx,c,body.prompt_id,body.comment,bridge)
+                cached={'resolved':body.resolved,'comment':body.comment,'ticket_id':ticket['ticket_id'] if ticket else None,'completed':False}
+                responses[body.prompt_id]=cached
+                c['resolution_prompt']=None
+                save_conversation(c,ctx)
+            ticket=owned('ticket',cached['ticket_id'],ctx) if cached['ticket_id'] else None
+            if not cached['completed']:
+                if ticket:tickets.deliver(ticket)
+                pending_refund=any(a['conversation_id']==conversation_id and a['type']=='create_refund_request' and a['status']=='succeeded' for a in store.list('action',ctx.tenant_id))
+                state='resolved' if body.resolved and not pending_refund else 'unresolved'
+                if body.resolved:
+                    reply='Дякую за підтвердження! Радий, що допомогли.'
+                    if pending_refund:reply+=' Запит на повернення коштів ще очікує розгляду; гроші поки не повернено.'
+                else:
+                    reply=f"Створив тікет {ticket['ticket_id']} з описом і діагностикою. Команда підтримки зможе продовжити перевірку."
+                    if tickets.summary(ticket)['delivery']['status']=='sent':reply+=' Тікет надіслано в Telegram.'
+                    else:reply+=' Тікет збережено; статус надсилання в Telegram показано нижче.'
+                turn={'schema_version':'1','conversation_id':conversation_id,'state':state,'reply':reply,'questions':[],'evidence':[],'proposed_action':None,'action_result':None,'analysis':c.get('analysis'),'resolution_prompt':None,'support_ticket':tickets.summary(ticket) if ticket else None}
+                c['messages'].append({'message_id':'feedback_user_'+body.prompt_id,'role':'user','text':('Так, проблему вирішено.' if body.resolved else 'Ні, проблему не вирішено.')+(' '+body.comment if body.comment else ''),'created_at':stamp()})
+                c['messages'].append({'message_id':'feedback_bot_'+body.prompt_id,'role':'assistant','text':reply,'created_at':stamp(),'turn':turn})
+                c['state']=state;c['latest_turn']=turn;cached['completed']=True
+                c['customer_resolution']={'resolved':body.resolved,'prompt_id':body.prompt_id,'created_at':stamp()}
+                save_conversation(c,ctx)
+            return {'resolved':cached['resolved'],'ticket':tickets.summary(ticket) if ticket else None,'state':c['state']}
+
+    @app.get('/api/v1/tickets/{ticket_id}')
+    def get_ticket(ticket_id:str,ctx=Depends(context)):
+        ticket=owned('ticket',ticket_id,ctx)
+        return {**{k:v for k,v in ticket.items() if k!='delivery'},'delivery':tickets.summary(ticket)['delivery']}
+
+    @app.post('/api/v1/tickets/{ticket_id}/delivery')
+    def retry_ticket_delivery(ticket_id:str,ctx=Depends(context)):
+        if ctx.role!='owner':fail(403,'FORBIDDEN','Повторне надсилання доступне власнику')
+        with store.lock:
+            ticket=owned('ticket',ticket_id,ctx)
+            summary=tickets.deliver(ticket)
+            c=owned('conversation',ticket['conversation_id'],ctx)
+            update_ticket_card(c,summary,ctx)
+            return summary
 
     ui = Path(__file__).resolve().parents[1] / "ui"
     app.mount("/assets", StaticFiles(directory=ui), name="assets")

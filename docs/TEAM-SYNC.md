@@ -183,3 +183,13 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - No raw customer data is added to global RAG or model credentials; RAG code and colleague pitch files were left intact.
 
 - Verification: 57 offline/API tests and the browser regression passed before the final explicit-confusion guard. Live Gemma returned customer_tone in its normal response. Added a guard so neutral model tone does not erase explicit confusion; attribution changes to rules when that guard applies.
+
+## 2026-10-31: resolution feedback and Telegram escalation checkpoint
+
+- User requests bot feedback after resolution and unresolved-ticket delivery to both Telegram users who started the bot.
+- Implemented persistent tickets, yes/no feedback (buttons or text), diagnostics bundle and delivery receipts. Public contract 1.6 records the optional fields and routes.
+- 67 offline/API tests passed, including duplicate prevention, tenant isolation, partial/uncertain delivery, typed feedback and pending refunds.
+- Real Telegram integration test succeeded: one explicitly labeled test ticket delivered to both configured recipients (2/2). Token and chat IDs are only in ignored .env.
+- Current localhost process still needs a restart to load these backend changes.
+- User then switched focus to presentation. A fictionalized calls image is ready at docs/pitch/assets/calls-fictional.png, but the edited presentation is NOT complete. Existing deck was inspected and rendered; no final replacement PPTX was exported.
+- Before publishing, fetched eb376dd: teammate added ROI UI and updated the pitch deck/video script. Preserve those changes when merging.

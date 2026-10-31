@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.5.0**. Date: 2026-10-31.
+Contract version: **1.6.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -377,3 +377,21 @@ This sorting changes presentation order; it does not implement background job sc
 UI shows an expandable assessment panel, priority markers and an optional priority order selector.
 Contract change notice: compatible optional metadata and list query parameter; existing four action shapes are unchanged.
 Affected components: model prompt/final schema, support API persistence/listing, and UI. Implemented together in this change.
+
+## Resolution feedback and escalation (1.6)
+
+User authorizes post-resolution feedback and Telegram delivery of unresolved support tickets.
+AgentTurn adds optional resolution_prompt: {prompt_id, question}, and support_ticket: {ticket_id, status, delivery}.
+The server asks after succeeded/failed actions or a substantive final explanation. Questions and unconfirmed proposals do not trigger feedback.
+POST /api/v1/conversations/{id}/feedback accepts {prompt_id, resolved: boolean, comment?: string}.
+An affirmative answer records customer confirmation. Pending refund requests remain unresolved financially; no money movement is claimed.
+A negative answer creates one persistent ticket per tenant/conversation/prompt, including history, actions, evidence, diagnostics, priority and customer tone.
+Repeated identical feedback returns the original ticket; changed answers conflict. Stale questions return STALE_FEEDBACK.
+Plain-text yes/no replies to an active resolution question use the same flow without another model call.
+GET /api/v1/tickets/{id} returns the authenticated tenant's redacted report.
+POST /api/v1/tickets/{id}/delivery retries only undelivered recipients; requires owner role.
+Delivery summary is {status: pending|sent|partial|failed|unknown, delivered, recipients, uncertain}.
+Telegram destinations and token are server configuration only: TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_IDS (JSON list).
+No bot credentials or recipient chat IDs are returned to the browser or committed to Git.
+Ticket data persists before sending. Successful sends are not repeated; uncertain sends are not blindly retried because Telegram has no idempotency key.
+Current two recipients explicitly authorized by the user are configured only in local ignored .env.

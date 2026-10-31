@@ -131,3 +131,9 @@ class Decision(Strict):
 
 class Login(Strict):
     token: str = Field(min_length=1, max_length=500)
+
+
+class ResolutionFeedback(Strict):
+    prompt_id: str = Field(min_length=1,max_length=100)
+    resolved: bool = Field(strict=True)
+    comment: str = Field(default='',max_length=2000)

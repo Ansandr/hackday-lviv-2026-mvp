@@ -42,5 +42,6 @@ Never commit .env or secrets.
 ## Supporting references
 
 - [docs/SETUP.md](docs/SETUP.md): provider setup examples.
+- **[docs/RUN.md](docs/RUN.md): how to run the demo and who runs what.**
 - [docs/PLAYBOOK.md](docs/PLAYBOOK.md): event planning reference.
 - [notes/](notes/): historical ideas, superseded where they conflict with the canonical context.

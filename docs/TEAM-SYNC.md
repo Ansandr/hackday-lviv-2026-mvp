@@ -139,3 +139,11 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - `src/agent/agent.py`: Gemma JSON tool loop (max 6 steps) over the read tools + `search_kb` (RAG `retrieve`); only cites evidence from tool results; invalid proposals are dropped.
 - `src/agent/serve.py`: `LocalBridge` wired into Max's `create_app`. Run live: `python -m uvicorn src.agent.serve:app --port 8000`, login `demo-a` / `demo-b`.
 - Checks: `pytest tests` 37 passed (new tests/test_agent_bridge.py: resync and refund end to end through the API, tenant isolation, bad proposal). Live Gemma smoke: promo scenario -> resync_pos proposal, prepare OK.
+
+## 2026-10-31 16:35: single integrated chain = Max's version (decision by Andrii)
+
+- Two parallel implementations existed in main: Andrii's `src/agent/agent.py` + `src/backend/mock_saas.py` + `src/agent/serve.py` (in-memory, `LocalBridge`) and Max's `src/agent/runtime.py` + `src/backend/product.py` + `src/support/integrated.py` (SQLite/Mongo, `IntegratedBridge`).
+- Decision: main keeps Max's chain. Andrii's version is preserved in branch `archive/andrii-agent-mock` (commit before this change) and removed from main together with `tests/test_agent_bridge.py`. The 16:20 entry above describes the archived version; its run command (`src.agent.serve`) no longer exists.
+- Ownership now: `src/rag`, `data/`: Andrii. `src/support`, `src/ui`, `src/agent/runtime.py`, `src/backend/product.py`, `src/backend/seed.py`: Max.
+- RAG seam unchanged: `runtime.retrieve` calls `src.rag.retrieve.retrieve(query, ctx, intent, k=4)` when `SUPPORT_RAG_MODE=atlas`. Default launcher mode is `files` (curated docs, no vectors); use `atlas` for the demo.
+- How to run: [RUN.md](RUN.md).

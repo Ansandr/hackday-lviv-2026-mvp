@@ -109,3 +109,10 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Володя's area (UI + support API) is taken over by Макс (denisk0m) from scratch; we no longer wait for Володя's push.
 - Final owners: Andrii = `src/rag`, `src/agent` (bridge `turn`), `src/backend` (bridge `prepare`/`execute`, seed). Макс = `src/support`, `src/ui`.
 - Integration: one in-process bridge object passed to `create_app(bridge=...)`; contract 1.2 governs where older docs conflict.
+
+## 2026-10-31 16:20: agent + mock SaaS live bridge (Andrii)
+
+- `src/backend/mock_saas.py`: seed for tenant_a/tenant_b (promo FALL20 with stale POS version, duplicate subscriptions sub_01/sub_02, duplicate payments pay_01/pay_02, logs incl. POS_SYNC_FAILED, SUBSCRIPTION_CREATE_RETRY), 6 read tools, `prepare`/`execute` for the 4 actions with idempotency by action_id, precondition recheck, audit. Shortcut: in-memory, resets on restart.
+- `src/agent/agent.py`: Gemma JSON tool loop (max 6 steps) over the read tools + `search_kb` (RAG `retrieve`); only cites evidence from tool results; invalid proposals are dropped.
+- `src/agent/serve.py`: `LocalBridge` wired into Max's `create_app`. Run live: `python -m uvicorn src.agent.serve:app --port 8000`, login `demo-a` / `demo-b`.
+- Checks: `pytest tests` 37 passed (new tests/test_agent_bridge.py: resync and refund end to end through the API, tenant isolation, bad proposal). Live Gemma smoke: promo scenario -> resync_pos proposal, prepare OK.

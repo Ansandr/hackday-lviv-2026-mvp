@@ -1,8 +1,7 @@
 # Business context
 
-- Customers are venue owners using our SaaS; they write to the vendor's support.
-- Refund policy: auto refund only for a confirmed duplicate, max 2000 UAH per ticket; above goes to a billing manager.
-- A bank hold (`pending`) is not a charge; two venues = two subscriptions, not a duplicate.
-- Knowledge must never come from an unverified ticket: only judge score >= 4 and `policy_ok` enters the KB as `approved`.
-- Customer data (phones, emails, cards) must not be stored in the KB.
-- Tenants never see each other's ticket-derived knowledge (`tenant_scope`).
+- Customers are venue owners using our SaaS; they write to the vendor's support. MVP covers three intents: promo_how_to, promo_not_applied, double_charge (plus `other`).
+- Shared product documentation is curated by us and goes to `kb_global`. Customer tickets never enter `kb_global`.
+- Ticket-derived knowledge stays inside its tenant (`kb_tenant`) and is `pending_review`; nothing is published automatically in the MVP.
+- Cancelling a duplicate subscription does not refund a captured payment; docs and extracted records must not claim it does.
+- Customer data (phones, emails, cards) must not be stored in the KB or sent to a model unredacted.

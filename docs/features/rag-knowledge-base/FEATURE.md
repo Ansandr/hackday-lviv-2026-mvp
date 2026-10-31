@@ -1,20 +1,23 @@
 # RAG knowledge base
 
-**What:** a searchable knowledge base for the support agent, built automatically from product docs and resolved tickets.
-**Why:** the agent answers "how to" questions with a cited source and knows known issues + which tool fixes them, so fewer tickets reach people.
+Contract: [docs/CONTRACTS.md](../../CONTRACTS.md) v1.0.0, section "RAG module interface". This folder must not redefine it.
+
+**What:** a searchable knowledge base for the support agent's `search_kb` tool, built from curated product docs.
+**Why:** the agent answers "how to" questions and recognises known errors with a cited `kb_id`; case-specific evidence comes from logs, not from RAG.
 **Owner:** Andrii.
 
 ## Scope (MVP)
-- Ingest `data/docs/*.md` (one record per section) and `data/tickets/*.json` (Gemma extracts a structured record).
-- Dedup similar records (`occurrences` counter = signal for developers).
-- `retrieve(query, tenant_id, product_area, k)` for the agent.
-- Security: PII redaction, injection rejection, judge gate, tenant pre-filter, tool allowlist.
+- Ingest curated `data/docs/*.md` into `kb_global` (approved), one record per `## ` section.
+- Extract customer tickets with Gemma into `kb_tenant` of their own tenant, always `pending_review` (never retrieved; automatic publication is disabled).
+- `retrieve(query, context, intent=None, k=4) -> [{kb_id, text, score}]` over approved global + authenticated-tenant records.
+- Security: PII redaction, injection rejection, intent/tool allowlists, tenant pre-filter, no customer content in `kb_global`.
 
 ## Acceptance criteria
-- "Як створити промокод" returns a `promo` doc record in the top 2.
-- "Промокод не проходить на касі" returns records whose `action_tool` is `resync_pos` / `check_promo` / `extend_promo`.
-- "Двічі списали за підписку" returns the refund policy (limit 2000 UAH) in the top 2.
-- Tickets with injection text are rejected; tickets with judge score < 4 or policy violation are `pending_review` and never retrieved.
-- No phone/email/card number is stored in `kb`.
+- "Як створити промокод" returns a `promo_how_to` record in the top 2.
+- "Промокод не проходить на касі" returns a `promo_not_applied` record in the top 2.
+- "Двічі списали за підписку" returns a `double_charge` record in the top 2.
+- `k` outside 1..10, unknown intent or empty tenant raise `ValueError`.
+- A `kb_tenant` record of tenant_b is never returned for tenant_a. `pending_review` records are never returned.
+- `kb_global` has no `tenant_id` and no ticket-derived records. No phone/email/card number is stored.
 
-Out of scope: UI for reviewing `pending_review`, Atlas cloud deploy, re-ingesting on doc edits.
+Out of scope: review UI for `pending_review`, judge-based publication, tone analysis, Atlas cloud deploy.

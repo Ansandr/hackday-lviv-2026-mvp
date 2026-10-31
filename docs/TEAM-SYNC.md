@@ -38,3 +38,14 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - These are known migration differences for later RAG integration. This documentation change does not merge or rewrite that feature branch.
 - Publish this baseline notice with the main push. No external team message was sent.
 - PR approvals and owner acknowledgments are not merge gates. Contract notices and compatibility checks remain required.
+
+## 2026-10-31: RAG migrated to contract v1 and merged to main
+
+- Inspected origin/main at 0137b83 before merging; no newer commits.
+- `src/rag/` implements `retrieve(query, context, intent=None, k=4) -> [{kb_id, text, score}]` per CONTRACTS.md v1.0.0.
+  RequestContext dataclass lives in `src/rag/retrieve.py` until the API defines its own; any object with `tenant_id` works.
+- Storage: `kb_global` (curated `data/docs`, approved, no tenant_id) and `kb_tenant` (ticket extractions, always `pending_review`), one `kb_vector` index each.
+- Curated corpus rewritten for the three scenarios (`data/docs/*.md`, header `<!-- intent: ... -->`). Refund/venue-onboarding docs removed.
+- Embeddings: local Ollama `embeddinggemma` (768). Ticket extraction: hosted Gemma 4 (`GEMMA_MODEL`) with fallback to local `gemma3:4b`.
+- Checks: `python -m src.rag.ingest --reset` on local `mongodb-atlas-local`, then `pytest tests`: 17 passed (offline + live: three scenarios, intent filter, KbHit shape, pending never returned, tenant isolation, kb_global has no customer content).
+- Not yet done: Atlas shared cluster (guide in docs/ATLAS-SETUP.md), `search_kb` tool wrapper in the agent (agent owner), event name for retried signup in data/docs/error-codes.md is `SUBSCRIPTION_CREATE_RETRY` and must match the mock's logs.

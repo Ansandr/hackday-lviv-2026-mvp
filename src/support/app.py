@@ -151,7 +151,7 @@ def create_app(store=None, bridge=None, accounts=None):
             except ActionRejected:
                 fail(422, "VALIDATION_ERROR", "Пропозиція не пройшла перевірку SaaS. Уточніть дані звернення.")
             except ModelUnavailable:
-                fail(503, "MODEL_UNAVAILABLE", "AI-сервіс тимчасово не відповідає. Ваші дані збережені в полі повідомлення — спробуйте надіслати ще раз.")
+                fail(503, "MODEL_UNAVAILABLE", "AI-сервіс тимчасово не відповідає. Повідомлення залишилось у чаті. Натисніть «Повторити».")
             except (DependencyError, ValidationError):
                 fail(503, "DEPENDENCY_UNAVAILABLE", "Агент або SaaS недоступний. Повторіть повідомлення.")
             # A new proposal invalidates any previous unconfirmed preview.

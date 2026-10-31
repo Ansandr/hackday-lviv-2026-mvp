@@ -162,3 +162,12 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Complete explicit numbered answers now use validated server parsing after the agent's clarification, avoiding another model dependency. Ambiguous or incomplete input still goes through the agent.
 - A live failure also exposed empty model text raising AttributeError and being mislabeled as an outage. Empty output now triggers schema repair; provider errors are distinguished from SaaS errors.
 - Browser regression checked legacy raw evidence, unlimited usage and inclusive final-date display. Raw FILE IDs, JSON details, event codes and Markdown comments were absent from visible text.
+
+## 2026-10-31: immediate chat-send feedback
+
+- Fetched origin before implementation; main was adf0f3b with no newer teammate commits.
+- UI now inserts an outgoing bubble immediately, clears the composer and shows a separate agent waiting indicator.
+- Drafts typed while waiting are retained. Failed requests keep their bubble and provide an inline retry using the original client_message_id.
+- A successful POST is not marked failed when subsequent history refresh fails; its returned AgentTurn still appears.
+- No public payload or action contract changed. Updated the model-outage text to match inline retry behavior.
+- Playwright verified delayed success, failure/retry, duplicate prevention, draft preservation and history-refresh failure recovery.

@@ -74,7 +74,7 @@ A pending authorization, separate business, or single subscription does not auth
 ### Create a promo code
 
 Collect discount percentage, venue, start date, expiry date, and total usage limit.
-Use percentage discounts only in this MVP. Validate 1 through 100 and a positive integer usage limit.
+Use percentage discounts only in this MVP. Validate 1 through 100 and either a positive integer usage limit or null for unlimited usage.
 Interpret dates in the tenant timezone and store UTC instants.
 The API validates that expiry follows start and that the venue belongs to the tenant.
 Show a complete preview. After confirmation, `create_promo` generates the code on the server.

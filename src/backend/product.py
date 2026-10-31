@@ -18,7 +18,7 @@ def utc():
 def seed_state(tenant):
     return {
         'tenant_id': tenant, 'version': 1,
-        'venues': {'venue_01': {'business_id': 'business_01', 'timezone': 'Europe/Kyiv'}},
+        'venues': {'venue_01': {'name':'Мій заклад','business_id': 'business_01', 'timezone': 'Europe/Kyiv'}},
         'promos': {'AUTUMN20': {'promo_id':'promo_01','code':'AUTUMN20','venue_id':'venue_01','discount_percent':20,'starts_at':'2026-01-01T00:00:00Z','expires_at':'2027-01-01T00:00:00Z','max_redemptions':100,'redemption_count':0,'status':'active','version':7}},
         'pos_state': {'venue_01': {'promo_versions': {'AUTUMN20': 6}}},
         'checkouts': {'checkout_01': {'checkout_id':'checkout_01','business_id':'business_01','venue_id':'venue_01','promo_code':'AUTUMN20','trace_id':'trace_checkout_01'}},
@@ -137,7 +137,7 @@ class Product:
         if not c:
             raise ActionRejected('Checkout not found')
         p = s['promos'].get(c['promo_code'])
-        accepted = bool(p and p['status']=='active' and p['venue_id']==c['venue_id'] and datetime.fromisoformat(p['starts_at'])<=datetime.now(timezone.utc)<datetime.fromisoformat(p['expires_at']) and p['redemption_count']<p['max_redemptions'] and s['pos_state'][c['venue_id']]['promo_versions'].get(c['promo_code'])==p['version'])
+        accepted = bool(p and p['status']=='active' and p['venue_id']==c['venue_id'] and datetime.fromisoformat(p['starts_at'])<=datetime.now(timezone.utc)<datetime.fromisoformat(p['expires_at']) and (p['max_redemptions'] is None or p['redemption_count']<p['max_redemptions']) and s['pos_state'][c['venue_id']]['promo_versions'].get(c['promo_code'])==p['version'])
         return {'accepted':accepted,'rejection_code':None if accepted else 'PROMO_NOT_APPLICABLE','checkout_id':cid}
 
     @staticmethod
@@ -190,6 +190,8 @@ class Product:
             if not any(x['trace_id'] in traces and x['safe_details'].get('business_id')==a['business_id'] for x in logs):
                 raise ActionRejected('Missing billing trace for this business')
         preview = {}
+        if p['type'] in ('resync_pos','create_promo'):
+            preview['venue_name']=s['venues'][a['venue_id']].get('name','Ваш заклад')
         if p['type']=='create_refund_request':
             pay = s['payments'][p['parameters']['payment_id']]
             preview = {k:pay[k] for k in ('amount_minor','currency')}

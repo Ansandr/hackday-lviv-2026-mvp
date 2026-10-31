@@ -13,7 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 
-from .adapters import ActionRejected, DependencyError, DemoBridge, configured_bridge
+from .adapters import ActionRejected, DependencyError, DemoBridge, ModelUnavailable, configured_bridge
 from .models import Context, Decision, Login, MessageInput
 from .store import Store
 
@@ -150,6 +150,8 @@ def create_app(store=None, bridge=None, accounts=None):
                     store.put("action", action["action_id"], ctx.tenant_id, record)
             except ActionRejected:
                 fail(422, "VALIDATION_ERROR", "Пропозиція не пройшла перевірку SaaS. Уточніть дані звернення.")
+            except ModelUnavailable:
+                fail(503, "MODEL_UNAVAILABLE", "AI-сервіс тимчасово не відповідає. Ваші дані збережені в полі повідомлення — спробуйте надіслати ще раз.")
             except (DependencyError, ValidationError):
                 fail(503, "DEPENDENCY_UNAVAILABLE", "Агент або SaaS недоступний. Повторіть повідомлення.")
             # A new proposal invalidates any previous unconfirmed preview.

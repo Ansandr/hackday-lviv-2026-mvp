@@ -11,6 +11,10 @@ class DependencyError(Exception):
     pass
 
 
+class ModelUnavailable(DependencyError):
+    pass
+
+
 class ActionRejected(DependencyError):
     """Upstream explicitly guarantees rejection without a mutation."""
 

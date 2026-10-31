@@ -147,3 +147,18 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Ownership now: `src/rag`, `data/`: Andrii. `src/support`, `src/ui`, `src/agent/runtime.py`, `src/backend/product.py`, `src/backend/seed.py`: Max.
 - RAG seam unchanged: `runtime.retrieve` calls `src.rag.retrieve.retrieve(query, ctx, intent, k=4)` when `SUPPORT_RAG_MODE=atlas`. Default launcher mode is `files` (curated docs, no vectors); use `atlas` for the demo.
 - How to run: [RUN.md](RUN.md).
+
+## 2026-10-31: numbered promo reply, unlimited usage and readable evidence
+
+- Fetched main decfa39; confirmed alternate agent/mock files were removed and archived by Andrii. Kept that cleanup intact.
+- User reported numbered promo details with "безліміт використань" and generic agent/SaaS unavailable error.
+- Reproduction showed the old model contract demanded a positive integer and requested unnecessary venue/time clarification. Hosted-model failures were also mislabeled as SaaS dependency failures.
+- Contract 1.4 allows max_redemptions:null for unlimited. Product checkout and UI honor that value.
+- Agent uses prior question context, keeps latest text intact, strips old UI cards from prompts, and normalizes date-only ranges with IANA timezone rules.
+- Evidence now uses short Ukrainian descriptions; UI also sanitizes historical raw evidence and hides technical IDs.
+- Model outages have a separate MODEL_UNAVAILABLE response. No automatic action runs before confirmation.
+
+- Live reproduction of the exact numbered reply succeeded in 5.3 seconds against the real tenant catalog: create_promo, 10%, starts_at 2026-10-31T00:00:00+02:00, exclusive expires_at 2026-11-11T00:00:00+02:00, max_redemptions:null. No action was executed during this read-only check.
+- Complete explicit numbered answers now use validated server parsing after the agent's clarification, avoiding another model dependency. Ambiguous or incomplete input still goes through the agent.
+- A live failure also exposed empty model text raising AttributeError and being mislabeled as an outage. Empty output now triggers schema repair; provider errors are distinguished from SaaS errors.
+- Browser regression checked legacy raw evidence, unlimited usage and inclusive final-date display. Raw FILE IDs, JSON details, event codes and Markdown comments were absent from visible text.

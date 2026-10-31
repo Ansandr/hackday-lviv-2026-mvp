@@ -1,6 +1,6 @@
 # Canonical MVP contracts
 
-Contract version: **1.3.0**. Date: 2026-10-31.
+Contract version: **1.4.0**. Date: 2026-10-31.
 Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
@@ -324,3 +324,21 @@ SUPPORT_RAG_MODE=atlas uses Andrii's retrieve unchanged. Explicit files mode ret
 Files mode does not claim vector retrieval. No customer-ticket records are loaded by that fallback.
 Gemma uses the hosted API when configured, otherwise local Ollama. Missing model service fails explicitly; there is no fixture fallback in integrated mode.
 Contract change notice 1.3.0: explicit user request to finish the missing components. Agent/mock added by Max; no changes to Andrii's RAG files.
+
+## Promo limits and customer presentation (1.4)
+
+Explicit user request: support unlimited promo usage and plain-language evidence.
+create_promo.parameters.max_redemptions remains required, with type positive integer OR null.
+null means unlimited; zero and negative values remain invalid. Persist null as null; never substitute an arbitrary large number.
+Checkout evaluation treats null as no redemption-count limit. Existing integer-limited promos retain their behavior.
+Affected consumers: model schema/prompt, product validation/storage, API cards and UI formatting. All are updated together.
+
+Date-only requests "from today through 10 November" use the venue timezone, local midnight today, and exclusive midnight 11 November.
+Server-side IANA timezone data derives the UTC offset, including daylight-saving changes. The card displays the inclusive final day.
+The single authenticated venue can be selected by "мій заклад"; multiple venues still require clarification.
+
+Evidence keeps {kind,id,summary}; IDs remain internal references. summary is now a short customer-readable sentence or document title.
+The UI does not print internal evidence IDs, Markdown comments, raw event names or JSON details.
+Historical evidence is sanitized for presentation without rewriting saved audit data.
+Model failures return MODEL_UNAVAILABLE; product dependency failures retain DEPENDENCY_UNAVAILABLE.
+Conversation context omits UI cards and caps old history while retaining the latest user reply.

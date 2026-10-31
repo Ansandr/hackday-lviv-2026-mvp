@@ -36,7 +36,7 @@ class Promo(Strict):
     discount_percent: int = Field(strict=True, ge=1, le=100)
     starts_at: datetime
     expires_at: datetime
-    max_redemptions: int = Field(strict=True, ge=1)
+    max_redemptions: int | None = Field(strict=True, ge=1)
 
     @model_validator(mode="after")
     def dates(self):

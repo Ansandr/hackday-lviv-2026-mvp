@@ -210,3 +210,16 @@ def test_remote_refund_verification_cannot_claim_money_returned(tmp_path):
     a = {'Authorization':'Bearer '+c.post('/api/v1/session',json={'token':'a'}).json()['access_token']}
     _,turn = start(c,a,'Рефанд')
     assert c.post('/api/v1/actions/'+turn['proposed_action']['action_id']+'/confirm',headers=a,json={'decision':'confirm'}).status_code == 503
+
+
+def test_model_outage_is_not_reported_as_saas_outage(setup):
+    from src.support.adapters import ModelUnavailable
+    c,_,bridge,auth=setup
+    a=auth('a')
+    cid=c.post('/api/v1/conversations',headers=a,json={}).json()['conversation_id']
+    def unavailable(*args): raise ModelUnavailable('provider 503')
+    bridge.turn=unavailable
+    r=c.post(f'/api/v1/conversations/{cid}/messages',headers=a,json={'client_message_id':'m','text':'1 10\n2 заклад мій\nбезліміт використань'})
+    assert r.status_code==503
+    assert r.json()['error']['code']=='MODEL_UNAVAILABLE'
+    assert 'SaaS' not in r.json()['error']['message']

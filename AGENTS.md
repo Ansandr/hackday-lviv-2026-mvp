@@ -54,13 +54,14 @@ Optional additions also require advance notice because other teammates depend on
 Before a contract change:
 
 1. Describe the proposed before/after behavior, reason, affected producers and consumers, and migration plan.
-2. Notify affected teammates through the agreed team channel or PR discussion before applying the change.
+2. Publish a notice in the contract change log with affected interfaces before or together with the change. Send a separate team message only when authorized.
 3. Record a notification reference and change status in the contract change log.
-4. For a breaking change, obtain affected owners' acknowledgment before merging. Keep the existing contract until coordination is complete.
+4. Integrate against the latest main and resolve compatibility conflicts. No PR or owner approval is required during the hackathon.
 
 An agent must not send external messages without user authorization. If notification is not authorized, prepare the notice for the user.
 Do not claim that teammates were notified or acknowledged unless there is evidence.
-An explicit user-directed baseline update can be prepared and committed locally. Mark team notification and acknowledgment as pending until they occur.
+The user authorizes direct pushes and merges to main during the hackathon. Do not block on PR reviews or acknowledgments.
+Keep change notices in the repository so teammates can discover them. Distinguish a published repository notice from a delivered external message.
 
 Update the canonical contract, version, implementation, examples, and relevant checks together.
 Use a minor version for compatible additions and a major version for breaking changes.
@@ -79,7 +80,8 @@ At task start, before interface integration, before commit or push, and at least
 If fetch fails, record the failure and stale checkpoint. Do not claim that the checkout is current.
 Fetch does not integrate changes. Integrate remote changes deliberately after checking local work and conflicts.
 Do not overwrite teammate work, reset their changes, auto-stash unknown edits, or resolve interface conflicts by choosing one side silently.
-Use a task branch. Stage only intended files and inspect the staged diff before committing.
+Use main or a task branch as convenient. Stage only intended files and inspect the staged diff before committing.
+Fetch immediately before pushing main. If a push is rejected, fetch, integrate new commits, verify, and retry without force-pushing.
 Push and merge only within the user's authorization and the contract coordination rules.
 This synchronization rule applies during active work. It does not create a background monitoring service.
 

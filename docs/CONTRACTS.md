@@ -1,7 +1,7 @@
 # Canonical MVP contracts
 
 Contract version: **1.0.0**. Date: 2026-10-31.
-Status: user-directed target baseline. Team notification and owner acknowledgment are pending before integration.
+Status: user-directed target baseline. Direct integration is authorized. This file and TEAM-SYNC.md publish the change notice.
 
 This file is the single source of truth for frontend, agent, RAG, mock product, and database interfaces.
 The specification does not imply that these interfaces are implemented.
@@ -181,7 +181,8 @@ Consumers must implement v1 or use an explicit adapter during migration. Do not 
 
 | Version | Date | Change | Authorization / notification | Integration status |
 |---|---|---|---|---|
-| 1.0.0 | 2026-10-31 | Consolidate three-scenario API, agent, RAG, DB, and action contracts; supersede the initial sketch | Explicit user request in this Codex chat; external team notice pending, prepared in TEAM-SYNC.md | Local baseline; affected-owner acknowledgment pending |
+| 1.0.0 | 2026-10-31 | Consolidate three-scenario API, agent, RAG, DB, and action contracts; supersede the initial sketch | Explicit user request in this Codex chat; repository notice in TEAM-SYNC.md; no external message sent | Direct merge authorized; implementation migration pending |
 
 For each later change, record the before/after behavior, compatibility, affected owners, migration, and notification reference before implementation.
-Breaking changes require affected-owner acknowledgment before merge. Optional additions also require advance notice.
+No PR or owner acknowledgment is required during the hackathon. Publish notices for all contract changes, including optional additions.
+Integrate with current main, preserve teammate work, and document unresolved implementation migrations.

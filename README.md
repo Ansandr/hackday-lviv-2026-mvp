@@ -33,8 +33,8 @@ These are module boundaries, not confirmed person assignments. Existing ownershi
 ## Workflow
 
 Follow [AGENTS.md](AGENTS.md). Inspect remote changes at task start, before integration and commit, and every 30 minutes during active work.
-Use a task branch and preserve teammate changes. Record meaningful synchronization in docs/TEAM-SYNC.md.
-Announce contract changes in advance. Breaking changes require affected owners' acknowledgment before merge.
+Direct pushes to main are authorized during the hackathon. Preserve teammate changes. Record meaningful synchronization in docs/TEAM-SYNC.md.
+Publish contract change notices in the repository. No PR review or owner acknowledgment is required before merge.
 Keep contract definitions only in docs/CONTRACTS.md. Other files link to it.
 Never commit .env or secrets.
 

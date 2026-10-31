@@ -3,6 +3,11 @@ let token = sessionStorage.getItem('support-session'), current = null, busy = fa
 const outbox=[];
 const labels = {resync_pos:'Синхронізація каси',cancel_duplicate_subscription:'Скасування зайвої підписки',create_promo:'Створення промокоду',create_refund_request:'Запит на повернення коштів'};
 const fields = {venue_id:'Заклад',business_id:'Бізнес',subscription_id:'Зайва підписка',retained_subscription_id:'Основна підписка',discount_percent:'Знижка, %',starts_at:'Початок',expires_at:'Діє до',max_redemptions:'Використання',payment_id:'Платіж',related_payment_id:'Пов’язаний платіж',amount_minor:'Сума в мінімальних одиницях',currency:'Валюта',venue_name:'Заклад'};
+// ROI minutes per closed case are demo assumptions, not measured.
+const savedMinutes={resync_pos:12,cancel_duplicate_subscription:15,create_refund_request:10,create_promo:8,answer:6};
+let saved={};try{saved=JSON.parse(sessionStorage.getItem('support-saved')||'{}');}catch{}
+function showSaved(){const total=Object.values(saved).reduce((a,b)=>a+b,0);$('#saved').hidden=!total;$('#saved').textContent='Зекономлено сьогодні: '+total+' хв';}
+function credit(key,minutes,box){if(!(key in saved)){saved[key]=minutes;try{sessionStorage.setItem('support-saved',JSON.stringify(saved));}catch{}}box.append(el('div','saved-badge','Зекономлено ~'+minutes+' хв роботи підтримки'));showSaved();}
 function el(tag, cls, text){const x=document.createElement(tag); if(cls)x.className=cls;if(text!==undefined)x.textContent=text;return x;}
 function error(e){$('#error').textContent=e.message;$('#error').hidden=false;setTimeout(()=>$('#error').hidden=true,8000);}
 function setBusy(value,text=''){busy=value;$('#progress').textContent=text;$('#send').disabled=value;$('#new').disabled=value;$('#logout').disabled=value;document.querySelectorAll('.actions button, .suggestions button, .retry-message, .resolution-actions button, .ticket-retry').forEach(b=>b.disabled=value);}
@@ -46,7 +51,9 @@ if(t.support_ticket){
  body.append(el('p','',deliveryText));
  if(d.status!=='sent'&&!d.uncertain){const b=el('button','ticket-retry','Повторити надсилання');b.type='button';b.onclick=()=>retryTicket(ticket.ticket_id);body.append(b);}card.append(body);box.append(card);
 }
-if(t.action_result){const a=t.action_result;const names={succeeded:'Виконано',failed:'Не виконано',rejected:'Відхилено',expired:'Пропозиція застаріла',executing:'Перевіряємо результат'};let text=names[a.status]||a.status;if(a.result){if(a.result.after.demo)text='Демонстрація завершена';else text+=' · '+a.result.resource_id;if(a.result.type==='create_refund_request')text+=' · Очікує розгляду';}if(a.error)text+='\n'+a.error.message;box.append(el('div','result',text));}}
+if(t.action_result){const a=t.action_result;const names={succeeded:'Виконано',failed:'Не виконано',rejected:'Відхилено',expired:'Пропозиція застаріла',executing:'Перевіряємо результат'};let text=names[a.status]||a.status;if(a.result){if(a.result.after.demo)text='Демонстрація завершена';else text+=' · '+a.result.resource_id;if(a.result.type==='create_refund_request')text+=' · Очікує розгляду';}if(a.error)text+='\n'+a.error.message;box.append(el('div','result',text));if(a.status==='succeeded'&&a.result&&!a.result.after?.demo)credit(a.action_id,savedMinutes[a.result.type]||savedMinutes.answer,box);}
+else if(t.state==='resolved'&&!t.proposed_action)credit(m.message_id||m.created_at,savedMinutes.answer,box);}
+
 $('#thread').append(box);return box;}
 function scrollThread(){$('#thread').scrollTop=$('#thread').scrollHeight;}
 function renderOutgoing(entry){
@@ -99,6 +106,7 @@ $('#new').onclick=()=>{if(!busy)create().catch(error);};
 $('#logout').onclick=async()=>{try{await api('/session','DELETE');}catch{}token=null;current=null;outbox.length=0;sessionStorage.removeItem('support-session');$('#history').replaceChildren();showLogin();};
 document.querySelectorAll('[data-prompt]').forEach(b=>b.onclick=()=>send(b.dataset.prompt));
 api('/health').then(h=>{$('#mode').textContent=h.mode==='demo'?'ДЕМО · без AI':h.mode==='integrated'?'GEMMA · підключення':'АГЕНТ';$('#demo-hint').hidden=h.mode!=='demo';}).catch(error);
+showSaved();
 if(token)enter().catch(error);
 
 $('#history-sort').onchange=()=>history().catch(error);

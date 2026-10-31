@@ -193,3 +193,7 @@ Reference actual commits or PRs. Do not describe uncommitted teammate work as in
 - Current localhost process still needs a restart to load these backend changes.
 - User then switched focus to presentation. A fictionalized calls image is ready at docs/pitch/assets/calls-fictional.png, but the edited presentation is NOT complete. Existing deck was inspected and rendered; no final replacement PPTX was exported.
 - Before publishing, fetched eb376dd: teammate added ROI UI and updated the pitch deck/video script. Preserve those changes when merging.
+## 2026-10-31 16:20: ROI counter in UI (Andrii via agent)
+
+- Frontend-only (`src/ui`): badge "Зекономлено ~N хв" on succeeded actions and on resolved answers without action, header total per browser session (sessionStorage, counted once per action/message).
+- Minutes per type are demo assumptions (resync 12, cancel duplicate 15, refund request 10, create promo 8, answer 6); no API or contract change.
